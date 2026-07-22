@@ -7,10 +7,6 @@ ENV/
 .env
 instance/
 
-# Cache Python
-__pycache__/
-*.py
-*.pyc
 
 # Konfigurasi OS tertentu
 .DS_Store
