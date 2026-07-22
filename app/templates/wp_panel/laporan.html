@@ -1,0 +1,224 @@
+{% extends "wp_panel/base_wp.html" %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Laporan Penjualan</h1>
+        <p class="text-gray-500 text-sm mt-1">Rincian seluruh transaksi untuk keperluan pembukuan dan pajak.</p>
+    </div>
+    
+    <!-- Panel Filter Tanggal -->
+    <form method="GET" action="{{ url_for('wp_panel_bp.laporan_penjualan') }}" class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 px-2">
+            <span class="text-sm font-medium text-gray-500">Mulai:</span>
+            <input type="date" name="start_date" value="{{ start_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        </div>
+        <div class="flex items-center gap-2 px-2 border-l border-gray-200">
+            <span class="text-sm font-medium text-gray-500">Akhir:</span>
+            <input type="date" name="end_date" value="{{ end_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        </div>
+        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1">
+            <i class="fa-solid fa-filter"></i> Filter
+        </button>
+        <!-- Tombol Cetak / Ekspor (Tampilan Saja untuk saat ini) -->
+        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1 ml-2">
+            <i class="fa-solid fa-file-excel"></i> CSV
+        </button>
+    </form>
+</div>
+
+<!-- Tabel Laporan Rinci -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-teal-900 text-white text-xs uppercase tracking-wider">
+                <tr>
+                    <th class="py-4 px-6 font-semibold">Waktu Transaksi</th>
+                    <th class="py-4 px-6 font-semibold">No. Struk</th>
+                    <th class="py-4 px-6 font-semibold text-right">DPP (Omzet)</th>
+                    <th class="py-4 px-6 font-semibold text-right">PBJT (10%)</th>
+                    <th class="py-4 px-6 font-semibold text-right">Total Bayar</th>
+                    <th class="py-4 px-6 font-semibold text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm text-gray-700">
+                {% for trx in transaksi %}
+                <tr class="hover:bg-teal-50 border-b border-gray-100 transition-colors">
+                    <td class="py-3 px-6 whitespace-nowrap">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td class="py-3 px-6 font-mono text-xs text-gray-500">{{ trx.no_struk }}</td>
+                    <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right text-red-600 font-medium">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right font-bold text-gray-900">Rp {{ "{:,.0f}".format(trx.total_dpp + trx.total_pbjt).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-center">
+                        <!-- Sisipkan URL API ke dalam fungsi JS -->
+                        <button onclick="bukaModal('{{ url_for('wp_panel_bp.get_detail_api', id_trx=trx.id) }}')" class="text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded text-xs font-semibold transition">
+                            <i class="fa-solid fa-eye"></i> Detail
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="py-10 text-center text-gray-500">
+                        <i class="fa-solid fa-folder-open text-3xl mb-2 text-gray-300 block"></i>
+                        Tidak ada transaksi pada rentang tanggal ini.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <!-- Baris Total Kumulatif -->
+            {% if transaksi %}
+            <tfoot class="bg-gray-50 border-t-2 border-gray-200 text-gray-800 font-bold">
+                <tr>
+                    <td colspan="2" class="py-4 px-6 text-right uppercase text-xs tracking-wider">Total Periode Ini:</td>
+                    <td class="py-4 px-6 text-right text-blue-700">Rp {{ "{:,.0f}".format(total_dpp).replace(',', '.') }}</td>
+                    <td class="py-4 px-6 text-right text-red-600">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</td>
+                    <td class="py-4 px-6 text-right text-teal-800 text-base">Rp {{ "{:,.0f}".format(total_dpp + total_pbjt).replace(',', '.') }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+        
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL DETAIL TRANSAKSI                     -->
+<!-- ========================================== -->
+<div id="detailModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300" id="modalContent">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <div>
+                <h3 class="font-bold text-gray-800 text-lg">Detail Struk</h3>
+                <p id="modal-struk" class="text-xs text-gray-500 font-mono mt-0.5">Memuat...</p>
+            </div>
+            <button onclick="tutupModal()" class="text-gray-400 hover:text-red-500 transition-colors w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Area Loading -->
+        <div id="modal-loading" class="py-12 flex flex-col items-center justify-center">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-teal-500 mb-3"></i>
+            <p class="text-gray-500 text-sm font-medium">Mengambil data...</p>
+        </div>
+
+        <!-- Modal Body (Data) -->
+        <div id="modal-data" class="hidden">
+            <div class="px-6 py-4 max-h-60 overflow-y-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-500 uppercase border-b border-gray-200">
+                        <tr>
+                            <th class="pb-2 font-semibold">Menu</th>
+                            <th class="pb-2 font-semibold text-center">Qty</th>
+                            <th class="pb-2 font-semibold text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-items" class="text-gray-700">
+                        <!-- Data item akan disuntikkan ke sini via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Modal Footer (Total) -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
+                <div class="flex justify-between text-gray-600 text-sm mb-1">
+                    <span>Subtotal (DPP)</span>
+                    <span id="modal-dpp" class="font-semibold">Rp 0</span>
+                </div>
+                <div class="flex justify-between text-red-500 text-sm mb-2">
+                    <span>PBJT (10%)</span>
+                    <span id="modal-pbjt" class="font-semibold">Rp 0</span>
+                </div>
+                <div class="flex justify-between text-gray-900 text-lg font-bold border-t border-dashed border-gray-300 pt-2">
+                    <span>Total Bayar</span>
+                    <span id="modal-grandtotal" class="text-teal-700">Rp 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const formatRupiahModal = (angka) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+    };
+
+    const modal = document.getElementById('detailModal');
+    const modalContent = document.getElementById('modalContent');
+    const modalLoading = document.getElementById('modal-loading');
+    const modalData = document.getElementById('modal-data');
+
+    async function bukaModal(apiUrl) {
+        // 1. Tampilkan modal dalam status loading
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+        }, 10);
+        
+        modalLoading.classList.remove('hidden');
+        modalData.classList.add('hidden');
+
+        try {
+            // 2. Tarik data dari backend secara async
+            const response = await fetch(apiUrl);
+            const data = await response.json();
+            const dpp = parseFloat(data.total_dpp) || 0;
+            const pbjt = parseFloat(data.total_pbjt) || 0;
+
+            // 3. Suntikkan data ke elemen HTML
+            document.getElementById('modal-struk').innerText = `${data.no_struk} • ${data.waktu}`;
+            document.getElementById('modal-dpp').innerText = formatRupiahModal(data.total_dpp);
+            document.getElementById('modal-pbjt').innerText = formatRupiahModal(data.total_pbjt);
+            document.getElementById('modal-grandtotal').innerText = formatRupiahModal(dpp + pbjt);
+
+            const tbody = document.getElementById('modal-items');
+            tbody.innerHTML = ''; // Kosongkan data lama
+
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-50">
+                            <td class="py-2">
+                                <p class="font-semibold text-gray-800">${item.nama}</p>
+                                <p class="text-xs text-gray-500">${formatRupiahModal(item.harga)}</p>
+                            </td>
+                            <td class="py-2 text-center font-bold text-gray-700">x${item.qty}</td>
+                            <td class="py-2 text-right font-bold text-gray-900">${formatRupiahModal(item.subtotal)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-xs text-gray-400 italic">Detail pesanan tidak tersedia/belum disimpan.</td></tr>`;
+            }
+
+            // 4. Sembunyikan loading, tampilkan data
+            modalLoading.classList.add('hidden');
+            modalData.classList.remove('hidden');
+
+        } catch (error) {
+            console.error("Gagal mengambil data:", error);
+            document.getElementById('modal-struk').innerText = "Gagal memuat data.";
+            modalLoading.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-3xl text-red-500 mb-3"></i><p class="text-red-500 text-sm">Terjadi kesalahan koneksi.</p>`;
+        }
+    }
+
+    function tutupModal() {
+        modal.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300); // Sesuaikan dengan durasi animasi tailwind
+    }
+
+    // Tutup jika klik area gelap di luar modal
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            tutupModal();
+        }
+    }
+</script>
+{% endblock %}

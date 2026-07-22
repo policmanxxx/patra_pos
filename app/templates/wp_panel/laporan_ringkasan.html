@@ -1,0 +1,78 @@
+{% extends "wp_panel/base_wp.html" %}
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Ringkasan Laporan</h1>
+    <!-- Tambahkan form filter tanggal yang sama seperti di laporan rinci Anda -->
+</div>
+
+<!-- 1. KARTU SALES SUMMARY & PROFIT -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <p class="text-sm text-gray-500 font-medium">Total Transaksi</p>
+        <p class="text-2xl font-bold text-gray-800">{{ total_transaksi }}</p>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <p class="text-sm text-gray-500 font-medium">Omzet Kotor (DPP)</p>
+        <p class="text-2xl font-bold text-blue-600">Rp {{ "{:,.0f}".format(total_omzet_dpp).replace(',', '.') }}</p>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-teal-500">
+        <p class="text-sm text-gray-500 font-medium">Laba Kotor (Profit)</p>
+        <p class="text-2xl font-bold text-teal-600">Rp {{ "{:,.0f}".format(laba_kotor).replace(',', '.') }}</p>
+        <p class="text-xs text-gray-400 mt-1">Omzet - Total HPP</p>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-red-500">
+        <p class="text-sm text-gray-500 font-medium">Pajak Titipan (PBJT)</p>
+        <p class="text-2xl font-bold text-red-600">Rp {{ "{:,.0f}".format(total_pajak).replace(',', '.') }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- 2. METODE PEMBAYARAN -->
+    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <h3 class="font-bold text-gray-800 border-b pb-2 mb-3">Metode Pembayaran</h3>
+        <ul class="space-y-3">
+            {% for bayar in pembayaran_summary %}
+            <li class="flex justify-between items-center">
+                <div>
+                    <span class="font-medium text-gray-700">{{ bayar.metode_pembayaran }}</span>
+                    <span class="text-xs text-gray-400 ml-2">({{ bayar.jumlah }} trx)</span>
+                </div>
+                <span class="font-bold text-gray-900">Rp {{ "{:,.0f}".format(bayar.total).replace(',', '.') }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- 3. BARANG TERLARIS -->
+    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+        <h3 class="font-bold text-gray-800 border-b pb-2 mb-3">Top 5 Menu Terlaris</h3>
+        <ul class="space-y-3">
+            {% for item in menu_terlaris %}
+            <li class="flex justify-between items-center">
+                <span class="font-medium text-gray-700">{{ item.nama_item_snapshot }}</span>
+                <span class="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full font-bold">Terjual {{ item.total_qty }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- 4. PERINGATAN STOK -->
+    <div class="bg-white p-5 rounded-xl border border-red-200 shadow-sm bg-red-50">
+        <h3 class="font-bold text-red-800 border-b border-red-200 pb-2 mb-3">
+            <i class="fa-solid fa-triangle-exclamation"></i> Peringatan Stok
+        </h3>
+        {% if stok_menipis %}
+        <ul class="space-y-3">
+            {% for item in stok_menipis %}
+            <li class="flex justify-between items-center">
+                <span class="font-medium text-gray-700">{{ item.nama_menu }}</span>
+                <span class="text-red-600 font-bold text-sm">Sisa: {{ item.stok }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-gray-500 text-center py-4">Semua stok aman.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

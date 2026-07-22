@@ -1,0 +1,120 @@
+{% extends "admin_bpkpd/base.html" %}
+
+{% block title %}Dashboard Pengawasan PBJT{% endblock %}
+{% block page_header %}Pusat Pemantauan Pajak Daerah BPKPD Kota Mojokerto{% endblock %}
+
+{% block content %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
+                <div class="absolute right-0 top-0 mt-4 mr-4 bg-blue-100 text-blue-600 p-2 rounded-lg">
+                    <i class="fa-solid fa-sack-dollar text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Omzet (DPP) Hari Ini</h3>
+                <p class="text-2xl font-bold text-gray-800 mt-2">Rp {{ "{:,.0f}".format(total_omzet_hari_ini | default(0)).replace(',', '.') }}</p>
+                <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-clock mr-1"></i>Update Real-time</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
+                <div class="absolute right-0 top-0 mt-4 mr-4 bg-red-100 text-red-600 p-2 rounded-lg">
+                    <i class="fa-solid fa-cash-register text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Potensi PBJT (10%) Hari Ini</h3>
+                <p class="text-2xl font-bold text-red-600 mt-2">Rp {{ "{:,.0f}".format(total_pbjt_hari_ini | default(0)).replace(',', '.') }}</p>
+                <p class="text-xs text-green-500 mt-2 font-medium"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Masuk ke kas daerah</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
+                <div class="absolute right-0 top-0 mt-4 mr-4 bg-green-100 text-green-600 p-2 rounded-lg">
+                    <i class="fa-solid fa-receipt text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Struk Hari Ini</h3>
+                <p class="text-2xl font-bold text-gray-800 mt-2">{{ total_trx_hari_ini | default(0) }} <span class="text-sm font-normal text-gray-500">Transaksi</span></p>
+                <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-file-invoice mr-1"></i>Tercatat di server</p>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
+                <div class="absolute right-0 top-0 mt-4 mr-4 bg-teal-100 text-teal-600 p-2 rounded-lg">
+                    <i class="fa-solid fa-store text-xl"></i>
+                </div>
+                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">WP Aktif (Kirim Data)</h3>
+                <p class="text-2xl font-bold text-gray-800 mt-2">{{ wp_aktif_count | default(0) }} <span class="text-sm font-normal text-gray-500">Resto/Kafe</span></p>
+                <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-wifi mr-1"></i>Dari total {{ total_wp | default(0) }} terdaftar</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800">Tren Penerimaan PBJT 7 Hari Terakhir</h2>
+                    <button class="text-blue-600 text-sm hover:underline"><i class="fa-solid fa-download mr-1"></i>Unduh CSV</button>
+                </div>
+                <div class="p-6 h-72 flex items-center justify-center bg-gray-50/50">
+                    <p class="text-gray-400 text-sm italic"><i class="fa-solid fa-chart-line mr-2"></i>Area Grafik Tren (Membutuhkan integrasi Chart.js)</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100">
+                    <h2 class="text-lg font-bold text-gray-800">Top 5 Wajib Pajak Bulan Ini</h2>
+                </div>
+                <div class="p-0">
+                    <ul class="divide-y divide-gray-100">
+                        {% for wp in top_wp %}
+                        <li class="p-4 hover:bg-gray-50 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
+                                    {{ loop.index }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-800">{{ wp.nama_usaha }}</p>
+                                    <p class="text-xs text-gray-500">{{ wp.npwpd }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm font-bold text-red-600">Rp {{ "{:,.0f}".format(wp.total_pajak).replace(',', '.') }}</p>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="p-6 text-center text-gray-500 text-sm">Belum ada data setoran bulan ini.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h2 class="text-lg font-bold text-gray-800">Log Transaksi Terkini</h2>
+                <a href="#" class="text-sm text-teal-600 hover:text-teal-800 font-medium">Lihat Semua Transaksi <i class="fa-solid fa-arrow-right ml-1"></i></a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
+                            <th class="py-4 px-6 font-semibold">No Struk</th>
+                            <th class="py-4 px-6 font-semibold">Wajib Pajak</th>
+                            <th class="py-4 px-6 font-semibold">Waktu (WIB)</th>
+                            <th class="py-4 px-6 font-semibold text-right">Dasar Pengenaan (DPP)</th>
+                            <th class="py-4 px-6 font-semibold text-right text-red-600">PBJT (10%)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
+                        {% for trx, nama_usaha in recent_trx %}
+                        <tr class="hover:bg-blue-50/50 transition-colors">
+                            <td class="py-3 px-6 font-mono text-gray-600">{{ trx.no_struk }}</td>
+                            <td class="py-3 px-6 font-bold">{{ nama_usaha }}</td>
+                            <td class="py-3 px-6 text-gray-500">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M:%S') }}</td>
+                            <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</td>
+                            <td class="py-3 px-6 text-right font-bold text-red-600 bg-red-50/30">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="py-8 text-center text-gray-500 italic">Belum ada aliran data transaksi yang masuk hari ini.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+{% endblock %}

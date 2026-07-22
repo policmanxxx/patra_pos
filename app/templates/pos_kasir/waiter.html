@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MojoPOS - Order Taker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { height: 100dvh; overscroll-behavior-y: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col text-gray-800 font-sans overflow-hidden">
+
+    <header class="bg-amber-600 text-white px-4 py-3 shadow-md flex justify-between items-center shrink-0 z-20">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 p-2 rounded-lg">
+                <i class="fa-solid fa-clipboard-list"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold leading-tight">Order Taker</h1>
+                <p class="text-[10px] text-amber-100">{{ current_user.nama_lengkap }}</p>
+            </div>
+        </div>
+        <a href="{{ url_for('auth_bp.logout') }}" class="text-amber-100 hover:text-white p-2">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </a>
+    </header>
+
+    <div class="bg-white p-4 shadow-sm z-10 shrink-0 border-b border-gray-200">
+        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Identitas Pesanan</label>
+        <div class="relative">
+            <i class="fa-solid fa-utensils absolute left-3 top-3.5 text-gray-400"></i>
+            <input type="text" id="input-meja" placeholder="Ketik Nomor Meja / Nama Pemesan" class="w-full pl-9 pr-3 py-3 bg-gray-50 border border-gray-300 rounded-xl font-bold text-gray-800 focus:ring-2 focus:ring-amber-500 outline-none uppercase transition shadow-inner">
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-y-auto p-3 pb-24 hide-scrollbar">
+        <div class="space-y-3">
+            {% for menu in menus %}
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-3 items-center">
+                <div class="w-16 h-16 rounded-xl bg-gray-100 shrink-0 overflow-hidden relative">
+                    {% if menu.foto %}
+                    <img src="{{ url_for('static', filename='uploads/menu/' ~ menu.foto) }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image"></i></div>
+                    {% endif %}
+                    
+                    {% if menu.is_track_stock and menu.stok <= 0 %}
+                    <div class="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
+                        <span class="text-[9px] font-bold text-red-600 bg-red-100 px-1 py-0.5 rounded">HABIS</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-gray-800 text-sm line-clamp-2 leading-tight">{{ menu.nama }}</h3>
+                    {% if menu.diskon > 0 %}
+                    <p class="text-xs text-amber-600 font-bold mt-1">Rp {{ "{:,.0f}".format(menu.harga - menu.diskon).replace(',', '.') }}</p>
+                    {% else %}
+                    <p class="text-xs text-gray-600 font-bold mt-1">Rp {{ "{:,.0f}".format(menu.harga).replace(',', '.') }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="shrink-0 flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-hidden h-9">
+                    <button onclick="kurangItem('{{ menu.id }}')" class="w-9 h-full flex items-center justify-center text-gray-500 active:bg-gray-200 transition"><i class="fa-solid fa-minus text-xs"></i></button>
+                    <span id="qty-{{ menu.id }}" class="w-6 text-center font-bold text-sm text-amber-700">0</span>
+                    <button onclick="tambahItem('{{ menu.id }}', '{{ menu.nama|escape }}', {{ menu.harga }}, {{ menu.diskon }}, {{ 'true' if menu.is_track_stock else 'false' }}, {{ menu.stok }})" class="w-9 h-full flex items-center justify-center text-gray-500 active:bg-gray-200 transition"><i class="fa-solid fa-plus text-xs"></i></button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <div class="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-10px_20px_rgba(0,0,0,0.05)] z-30 rounded-t-2xl pb-safe">
+        <button id="btn-kirim" onclick="kirimPesanan()" disabled class="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:text-gray-500 text-white font-bold py-3.5 rounded-xl shadow-md transition flex justify-between items-center px-5">
+            <div class="flex items-center gap-2">
+                <div class="bg-white/20 px-2 py-1 rounded text-xs"><span id="total-qty">0</span> Item</div>
+            </div>
+            <div class="flex items-center gap-2 text-sm">
+                Kirim Pesanan <i class="fa-solid fa-paper-plane"></i>
+            </div>
+        </button>
+    </div>
+
+    <div id="layar-sukses" class="fixed inset-0 bg-amber-500 z-[100] hidden flex-col items-center justify-center text-white opacity-0 transition-opacity duration-300">
+        <i class="fa-regular fa-circle-check text-7xl mb-4 animate-bounce"></i>
+        <h2 class="text-2xl font-bold">Terkirim!</h2>
+        <p class="text-amber-100 mt-2">Pesanan telah masuk ke sistem.</p>
+    </div>
+
+    <script>
+        let orderKeranjang = [];
+
+        function tambahItem(id, nama, harga, diskon, is_track_stock, stok) {
+            const item = orderKeranjang.find(i => i.id === id);
+            const currentQty = item ? item.qty : 0;
+            
+            if (is_track_stock && currentQty >= stok) {
+                alert(`Stok habis! (Sisa: ${stok})`);
+                return;
+            }
+
+            if (item) {
+                item.qty += 1;
+            } else {
+                orderKeranjang.push({ id, nama, harga, diskon, qty: 1 });
+            }
+            updateTampilan();
+        }
+
+        function kurangItem(id) {
+            const idx = orderKeranjang.findIndex(i => i.id === id);
+            if (idx !== -1) {
+                if (orderKeranjang[idx].qty > 1) {
+                    orderKeranjang[idx].qty -= 1;
+                } else {
+                    orderKeranjang.splice(idx, 1);
+                }
+                updateTampilan();
+            }
+        }
+
+        function updateTampilan() {
+            // Reset semua angka ke 0 dulu
+            document.querySelectorAll('[id^="qty-"]').forEach(el => el.innerText = '0');
+            
+            let totalItem = 0;
+            orderKeranjang.forEach(item => {
+                const qtyEl = document.getElementById(`qty-${item.id}`);
+                if (qtyEl) {
+                    qtyEl.innerText = item.qty;
+                    qtyEl.classList.add('text-amber-700', 'scale-125');
+                    setTimeout(() => qtyEl.classList.remove('scale-125'), 150); // Efek denyut
+                }
+                totalItem += item.qty;
+            });
+
+            document.getElementById('total-qty').innerText = totalItem;
+            document.getElementById('btn-kirim').disabled = totalItem === 0;
+        }
+
+        async function kirimPesanan() {
+            const inputMeja = document.getElementById('input-meja');
+            const meja = inputMeja.value.trim();
+            const btnKirim = document.getElementById('btn-kirim');
+
+            if (!meja) {
+                alert("Nomor Meja atau Nama Pemesan wajib diisi!");
+                inputMeja.focus(); return;
+            }
+            if (orderKeranjang.length === 0) return;
+
+            // Kunci tombol saat proses loading
+            btnKirim.disabled = true;
+            btnKirim.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...`;
+
+            try {
+                // KIRIM DATA KE DATABASE SERVER
+                const response = await fetch('/api/waiter/kirim', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        meja: meja,
+                        items: orderKeranjang
+                    })
+                });
+
+                if (response.ok) {
+                    const layarSukses = document.getElementById('layar-sukses');
+                    layarSukses.classList.remove('hidden');
+                    setTimeout(() => layarSukses.classList.remove('opacity-0'), 10);
+
+                    // Reset Form
+                    setTimeout(() => {
+                        orderKeranjang = [];
+                        inputMeja.value = '';
+                        updateTampilan();
+                        layarSukses.classList.add('opacity-0');
+                        setTimeout(() => layarSukses.classList.add('hidden'), 300);
+                        
+                        btnKirim.innerHTML = `Kirim Pesanan <i class="fa-solid fa-paper-plane"></i>`;
+                    }, 1500);
+                } else {
+                    alert("Gagal mengirim pesanan. Periksa koneksi jaringan Anda.");
+                    btnKirim.disabled = false;
+                    btnKirim.innerHTML = `Kirim Pesanan <i class="fa-solid fa-paper-plane"></i>`;
+                }
+            } catch (error) {
+                alert("Terjadi kesalahan jaringan.");
+                btnKirim.disabled = false;
+                btnKirim.innerHTML = `Kirim Pesanan <i class="fa-solid fa-paper-plane"></i>`;
+            }
+        }
+    </script>
+</body>
+</html>

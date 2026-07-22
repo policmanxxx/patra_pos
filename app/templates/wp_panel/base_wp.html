@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ current_user.wajib_pajak.nama_usaha if current_user.wajib_pajak else 'Panel Resto' }}</title>
+    <!-- Tailwind CSS (Gunakan versi script untuk development, sebaiknya install via npm untuk production) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        // Konfigurasi Tailwind untuk menambahkan warna kustom dan font keluarga
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6', // Warna utama teal modern
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Styling Scrollbar Estetik */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* slate-300 */
+            border-radius: 10px;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+            background: #94a3b8; /* slate-400 */
+        }
+        
+        /* Sidebar khusus tema terang dengan border halus */
+        .sidebar-light {
+            background-color: #ffffff;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        /* Transisi halus untuk menu item */
+        .menu-item {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 flex h-screen overflow-hidden font-sans text-slate-800">
+
+    <!-- OVERLAY GELAP (Untuk Mobile) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 hidden transition-opacity duration-300 opacity-0 md:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- SIDEBAR (Desain Bersih & Estetik) -->
+    <!-- (Kode Sidebar SAMA PERSIS dengan sebelumnya) -->
+    <aside id="sidebar" class="w-72 sidebar-light flex flex-col shadow-2xl md:shadow-none z-40 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shrink-0">
+        
+        <button onclick="toggleSidebar()" class="md:hidden absolute top-5 right-5 text-slate-400 hover:text-slate-700 focus:outline-none p-2 bg-slate-100 rounded-full h-8 w-8 flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+       <div class="p-6 pt-8 flex flex-col items-center text-center mt-4 md:mt-0 relative">
+            <!-- Background Gradient -->
+            <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-brand-50 to-transparent -z-10"></div>
+            
+            <!-- Kotak Logo Utama -->
+            <div class="h-20 w-20 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-brand-500 text-3xl mb-4 shadow-xl shadow-brand-500/10 transform rotate-3 hover:rotate-0 transition-transform duration-300 overflow-hidden">
+                <!-- Logika penampil gambar logo -->
+                <img src="{{ url_for('static', filename='uploads/logos/' + current_user.wajib_pajak.logo_url) if current_user.wajib_pajak.logo_url and current_user.wajib_pajak.logo_url != 'default_logo.png' else 'https://ui-avatars.com/api/?name=' + current_user.wajib_pajak.nama_usaha + '&background=0f766e&color=fff&size=200' }}" 
+                     alt="Logo {{ current_user.wajib_pajak.nama_usaha }}" 
+                     class="w-full h-full object-cover">
+            </div>
+            
+            <!-- Nama & NPWPD -->
+            <h2 class="text-slate-800 font-bold text-lg tracking-tight leading-tight">{{ current_user.wajib_pajak.nama_usaha }}</h2>
+            <p class="text-slate-500 text-xs mt-1.5 font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-id-card text-brand-400"></i> NPWPD: {{ current_user.wajib_pajak.npwpd }}
+            </p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5 custom-scrollbar">
+            
+            <div class="px-3 pb-2 pt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Menu Utama
+            </div>
+
+            <a href="{{ url_for('wp_panel_bp.index') }}" class="menu-item flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-brand-50 hover:text-brand-600 group">
+                <div class="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-white flex items-center justify-center mr-3 shadow-sm shadow-slate-200/50 group-hover:shadow-brand-100 transition-all">
+                    <i class="fa-solid fa-chart-line text-slate-400 group-hover:text-brand-500"></i>
+                </div>
+                <span class="font-medium text-sm">Dashboard</span>
+            </a>
+            
+            <a href="{{ url_for('wp_panel_bp.kelola_menu') }}" class="menu-item flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-brand-50 hover:text-brand-600 group">
+                <div class="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-white flex items-center justify-center mr-3 shadow-sm shadow-slate-200/50 group-hover:shadow-brand-100 transition-all">
+                    <i class="fa-solid fa-utensils text-slate-400 group-hover:text-brand-500"></i>
+                </div>
+                <span class="font-medium text-sm">Kelola Menu</span>
+            </a>
+            <!-- Tambahkan ini di base_wp.html -->
+            <a href="{{ url_for('wp_panel_bp.pengaturan_toko') }}" class="menu-item flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-brand-50 hover:text-brand-600 group">
+                <div class="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-white flex items-center justify-center mr-3 shadow-sm shadow-slate-200/50 group-hover:shadow-brand-100 transition-all">
+                    <i class="fa-solid fa-gear text-slate-400 group-hover:text-brand-500"></i>
+                </div>
+                <span class="font-medium text-sm">Pengaturan Toko</span>
+            </a>
+            
+            <a href="{{ url_for('ui_pos_bp.halaman_kasir') }}" class="menu-item flex items-center px-4 py-2.5 rounded-xl text-brand-600 bg-brand-50 hover:bg-brand-100 group border border-brand-100 shadow-sm mt-2">
+                <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-3 shadow-sm text-brand-500">
+                    <i class="fa-solid fa-cash-register"></i>
+                </div>
+                <span class="font-bold text-sm">Buka Kasir (POS)</span>
+            </a>
+
+            <div class="px-3 pb-2 pt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Pembukuan
+            </div>
+
+            <div>
+                <button onclick="toggleLaporan()" class="menu-item w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 group focus:outline-none">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-white flex items-center justify-center mr-3 shadow-sm shadow-slate-200/50 transition-all">
+                            <i class="fa-solid fa-folder-open text-slate-400 group-hover:text-slate-600"></i>
+                        </div>
+                        <span class="font-medium text-sm">Laporan</span>
+                    </div>
+                    <i id="chevron-laporan" class="fa-solid fa-chevron-down text-[10px] text-slate-400 transition-transform duration-300"></i>
+                </button>
+
+                <div id="submenu-laporan" class="hidden flex-col mt-1 mb-2 space-y-1 relative">
+                    <div class="absolute left-8 top-2 bottom-2 w-px bg-slate-200"></div>
+
+                    <a href="{{ url_for('wp_panel_bp.laporan_ringkasan') }}" class="flex items-center pl-14 pr-4 py-2 text-sm text-slate-500 hover:text-brand-600 hover:bg-brand-50/50 rounded-r-xl transition-colors relative group">
+                        <div class="absolute left-[30.5px] w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-brand-400 transition-colors"></div>
+                        <span class="font-medium">Ringkasan</span>
+                    </a>
+                    <a href="{{ url_for('wp_panel_bp.laporan_penjualan') }}" class="flex items-center pl-14 pr-4 py-2 text-sm text-slate-500 hover:text-brand-600 hover:bg-brand-50/50 rounded-r-xl transition-colors relative group">
+                        <div class="absolute left-[30.5px] w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-brand-400 transition-colors"></div>
+                        <span class="font-medium">Transaksi Rinci</span>
+                    </a>
+                    <a href="#" class="flex items-center pl-14 pr-4 py-2 text-sm text-slate-500 hover:text-brand-600 hover:bg-brand-50/50 rounded-r-xl transition-colors relative group">
+                        <div class="absolute left-[30.5px] w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-brand-400 transition-colors"></div>
+                        <span class="font-medium">Stok & Inventaris</span>
+                    </a>
+                    <a href="#" class="flex items-center pl-14 pr-4 py-2 text-sm text-slate-500 hover:text-brand-600 hover:bg-brand-50/50 rounded-r-xl transition-colors relative group">
+                        <div class="absolute left-[30.5px] w-1.5 h-1.5 rounded-full bg-slate-300 group-hover:bg-brand-400 transition-colors"></div>
+                        <span class="font-medium">Tutup Kasir</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-100 shrink-0 bg-slate-50/50">
+            <div class="flex items-center justify-between px-2 mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm">
+                        {{ current_user.nama_lengkap[:1]|upper if current_user.nama_lengkap else 'U' }}
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-bold text-slate-700 truncate w-32">{{ current_user.nama_lengkap }}</span>
+                        <span class="text-[10px] text-slate-400 capitalize">{{ current_user.role }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <a href="{{ url_for('auth_bp.logout') }}" class="flex items-center justify-center w-full px-4 py-2.5 bg-white border border-red-100 text-red-500 rounded-xl hover:bg-red-50 hover:border-red-200 transition-all font-medium text-sm shadow-sm group">
+                <i class="fa-solid fa-arrow-right-from-bracket mr-2 group-hover:-translate-x-1 transition-transform"></i>
+                Keluar
+            </a>
+        </div>
+    </aside>
+
+    <!-- AREA KANAN (HEADER + MAIN CONTENT) -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- HEADER MOBILE (Glassmorphism, hanya di HP) -->
+        <header class="md:hidden bg-white/80 backdrop-blur-md text-slate-800 flex justify-between items-center px-5 py-4 border-b border-slate-200 z-20 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="h-8 w-8 bg-brand-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-brand-500/30">
+                    <i class="fa-solid fa-store text-sm"></i>
+                </div>
+                <h1 class="font-bold text-base truncate max-w-[200px]">{{ current_user.wajib_pajak.nama_usaha }}</h1>
+            </div>
+            <button onclick="toggleSidebar()" class="text-slate-500 hover:text-brand-600 focus:outline-none p-2 rounded-md hover:bg-slate-100 transition">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </header>
+
+        <!-- HEADER DESKTOP (Hanya tampil di Tablet/Laptop) -->
+        <header class="hidden md:flex bg-white/90 backdrop-blur-sm border-b border-slate-200 px-8 py-4 items-center justify-between shrink-0 z-10 sticky top-0">
+            <!-- Bagian Kiri: Sapaan & Tanggal -->
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">
+                    Halo, {{ current_user.nama_lengkap.split()[0] if current_user.nama_lengkap else 'Admin' }}! 👋
+                </h2>
+                <p id="realtime-date" class="text-xs text-slate-500 mt-1 font-medium">Memuat tanggal...</p>
+            </div>
+            
+            <!-- Bagian Kanan: Ikon & Aksi Cepat -->
+            <div class="flex items-center gap-4">
+                <!-- Tombol Bantuan -->
+                <button class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition tooltip-container">
+                    <i class="fa-regular fa-circle-question"></i>
+                </button>
+                <!-- Tombol Notifikasi (dengan badge merah) -->
+                <button class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition relative">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT (Tempat konten dinamis dimuat) -->
+        <main class="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
+            <div class="max-w-7xl mx-auto">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+        
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // FUNGSI UNTUK TANGGAL REALTIME DI HEADER DESKTOP
+        function updateDate() {
+            const dateElement = document.getElementById('realtime-date');
+            if (dateElement) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const today = new Date().toLocaleDateString('id-ID', options);
+                dateElement.innerText = today;
+            }
+        }
+        updateDate(); // Jalankan sekali saat load
+
+        // FUNGSI TOGGLE SIDEBAR MOBILE
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            
+            if (overlay.classList.contains('hidden')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+            } else {
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // FUNGSI TOGGLE SUBMENU LAPORAN
+        function toggleLaporan() {
+            const submenu = document.getElementById('submenu-laporan');
+            const chevron = document.getElementById('chevron-laporan');
+            
+            if (submenu.classList.contains('hidden')) {
+                submenu.classList.remove('hidden');
+                submenu.classList.add('flex');
+                chevron.classList.add('rotate-180');
+            } else {
+                submenu.classList.add('hidden');
+                submenu.classList.remove('flex');
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+        // FUNGSI HIGHLIGHT MENU AKTIF OTOMATIS
+        document.addEventListener("DOMContentLoaded", function() {
+            const currentUrl = window.location.href;
+            
+            // Highlight Laporan
+            if (currentUrl.includes('/laporan')) {
+                toggleLaporan();
+                const submenuLinks = document.querySelectorAll('#submenu-laporan a');
+                submenuLinks.forEach(link => {
+                    if (link.href === currentUrl || currentUrl.includes(link.getAttribute('href'))) {
+                        link.classList.remove('text-slate-500');
+                        link.classList.add('text-brand-600', 'font-bold');
+                        const dot = link.querySelector('div');
+                        dot.classList.remove('bg-slate-300');
+                        dot.classList.add('bg-brand-500', 'ring-4', 'ring-brand-100');
+                    }
+                });
+            }
+            
+            // Highlight Menu Utama
+            const mainLinks = document.querySelectorAll('nav > a');
+            mainLinks.forEach(link => {
+                if (link.href === currentUrl && !link.classList.contains('bg-brand-50')) {
+                    link.classList.add('bg-brand-50', 'text-brand-600');
+                    link.classList.remove('text-slate-600');
+                    const iconContainer = link.querySelector('div');
+                    if (iconContainer) iconContainer.classList.add('bg-white', 'shadow-brand-100');
+                    const icon = link.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('text-slate-400');
+                        icon.classList.add('text-brand-500');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

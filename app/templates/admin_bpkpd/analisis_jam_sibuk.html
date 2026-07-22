@@ -1,0 +1,175 @@
+{% extends "admin_bpkpd/base.html" %}
+
+{% block title %}Analisis Jam Sibuk{% endblock %}
+{% block page_header %}Deteksi Anomali Jam Operasional{% endblock %}
+
+{% block content %}
+<!-- FILTER SECTION -->
+<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6">
+    <form method="GET" action="{{ url_for('admin_bp.analisis_jam_sibuk') }}" class="flex flex-col md:flex-row gap-4 items-end">
+        
+        <div class="w-full md:w-1/2">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Pilih Wajib Pajak</label>
+            <select name="wp_id" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2.5 border" required>
+                <option value="">-- Pilih Restoran / Kafe --</option>
+                {% for wp in daftar_wp %}
+                    <option value="{{ wp.id }}" {% if wp_id_aktif == wp.id|string %}selected{% endif %}>
+                        {{ wp.nama_usaha }} - {{ wp.npwpd }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="w-full md:w-1/4">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Pilih Hari</label>
+            <select name="hari" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm p-2.5 border">
+                <option value="-1" {% if hari_aktif == -1 %}selected{% endif %}>Semua Hari</option>
+                <option value="1" {% if hari_aktif == 1 %}selected{% endif %}>Senin</option>
+                <option value="2" {% if hari_aktif == 2 %}selected{% endif %}>Selasa</option>
+                <option value="3" {% if hari_aktif == 3 %}selected{% endif %}>Rabu</option>
+                <option value="4" {% if hari_aktif == 4 %}selected{% endif %}>Kamis</option>
+                <option value="5" {% if hari_aktif == 5 %}selected{% endif %}>Jumat</option>
+                <option value="6" {% if hari_aktif == 6 %}selected{% endif %}>Sabtu (Malam Minggu)</option>
+                <option value="0" {% if hari_aktif == 0 %}selected{% endif %}>Minggu</option>
+            </select>
+        </div>
+
+        <div class="w-full md:w-1/4">
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg transition-colors shadow-sm">
+                <i class="fa-solid fa-chart-line mr-2"></i> Analisis Data
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- GRAFIK SECTION -->
+{% if wp_terpilih %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+        <h2 class="text-sm font-bold text-gray-800">
+            <i class="fa-solid fa-chart-area mr-2 text-blue-500"></i> Pola Transaksi: {{ wp_terpilih.nama_usaha }}
+        </h2>
+        <div class="text-xs font-mono text-gray-500">Total Trx: <span class="font-bold text-gray-800">{{ total_trx }}</span></div>
+    </div>
+    
+    <div class="p-6">
+        <div class="relative h-96 w-full">
+            <canvas id="jamSibukChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg text-sm text-blue-800 shadow-sm">
+    <h3 class="font-bold mb-1"><i class="fa-solid fa-lightbulb text-yellow-500 mr-1"></i> Tips Pengawasan BPKPD:</h3>
+    <ul class="list-disc ml-5 space-y-1">
+        <li>Cari pola <strong>lembah (penurunan tajam)</strong> di jam-jam yang secara logika seharusnya ramai (contoh: Kafe turun di jam 19.00 - 21.00 pada hari Sabtu).</li>
+        <li>Garis biru menunjukkan volume (keramaian), garis hijau menunjukkan nilai nominal. Jika garis biru tinggi tapi garis hijau sangat rendah, ada indikasi WP melakukan <em>split bill</em> atau hanya memasukkan item murah ke sistem.</li>
+    </ul>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<!-- Muat Chart.js dari CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+{% if wp_terpilih %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('jamSibukChart').getContext('2d');
+        
+        // Data dari backend (parsing JSON dari Jinja)
+        const labels = JSON.parse('{{ jam_labels | safe }}');
+        const dataTransaksi = JSON.parse('{{ data_transaksi | safe }}');
+        const dataOmzet = JSON.parse('{{ data_omzet | safe }}');
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Jumlah Transaksi',
+                        data: dataTransaksi,
+                        borderColor: '#3b82f6', // blue-500
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#3b82f6',
+                        tension: 0.4,
+                        yAxisID: 'y',
+                        fill: true
+                    },
+                    {
+                        label: 'Omzet (Rp)',
+                        data: dataOmzet,
+                        borderColor: '#22c55e', // green-500
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 5], // Garis putus-putus
+                        pointBackgroundColor: '#22c55e',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.dataset.yAxisID === 'y1') {
+                                    // Format Rupiah
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                } else {
+                                    label += context.parsed.y + ' Struk';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        title: { display: true, text: 'Jam Operasional (WIB)', font: {weight: 'bold'} }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Volume Transaksi' },
+                        min: 0,
+                        ticks: { stepSize: 1 }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Nominal Omzet' },
+                        min: 0,
+                        grid: { drawOnChartArea: false }, // Jangan tumpuk garis grid
+                        ticks: {
+                            callback: function(value) {
+                                if (value >= 1000000) return 'Rp ' + (value / 1000000).toFixed(1) + 'M';
+                                if (value >= 1000) return 'Rp ' + (value / 1000).toFixed(0) + 'K';
+                                return value;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

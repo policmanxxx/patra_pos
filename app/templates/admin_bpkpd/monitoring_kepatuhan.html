@@ -1,0 +1,156 @@
+{% extends "admin_bpkpd/base.html" %}
+
+{% block title %}Monitoring Kepatuhan WP{% endblock %}
+{% block page_header %}Status Koneksi & Transaksi Wajib Pajak{% endblock %}
+
+{% block content %}
+<div class="mb-4 text-sm text-gray-500">
+    <i class="fa-solid fa-clock-rotate-left mr-1"></i> Data dianalisis secara real-time. Pengecekan terakhir: <span class="font-bold">{{ update_terakhir }}</span>
+</div>
+
+<!-- STATUS SUMMARY CARDS -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-green-500">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-gray-500 uppercase">Aman (Online)</h3>
+            <i class="fa-solid fa-wifi text-green-500"></i>
+        </div>
+        <p class="text-2xl font-black text-gray-800">{{ stats.online }}</p>
+        <p class="text-xs text-gray-400 mt-1">< 24 Jam Terakhir</p>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-yellow-400">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-gray-500 uppercase">Warning</h3>
+            <i class="fa-solid fa-triangle-exclamation text-yellow-400"></i>
+        </div>
+        <p class="text-2xl font-black text-gray-800">{{ stats.warning }}</p>
+        <p class="text-xs text-gray-400 mt-1">1 - 3 Hari Kosong</p>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-red-500">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-gray-500 uppercase">Indikasi Offline</h3>
+            <i class="fa-solid fa-plug-circle-xmark text-red-500"></i>
+        </div>
+        <p class="text-2xl font-black text-gray-800">{{ stats.offline }}</p>
+        <p class="text-xs text-gray-400 mt-1">> 3 Hari Kosong</p>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm border-b-4 border-gray-300">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-gray-500 uppercase">Belum Integrasi</h3>
+            <i class="fa-solid fa-ghost text-gray-400"></i>
+        </div>
+        <p class="text-2xl font-black text-gray-800">{{ stats.belum_ada_data }}</p>
+        <p class="text-xs text-gray-400 mt-1">Nol Transaksi</p>
+    </div>
+</div>
+
+<!-- TABEL MONITORING -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-magnifying-glass-chart mr-2"></i>Daftar Pemantauan (Diurutkan dari yang terindikasi bermasalah)</h2>
+    </div>
+    
+    <div class="p-4 overflow-x-auto">
+        <!-- TAMBAHAN: id="tabelMonitoring" untuk DataTables -->
+        <table id="tabelMonitoring" class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
+                    <th class="py-4 px-6 font-semibold w-16">No</th>
+                    <th class="py-4 px-6 font-semibold">Wajib Pajak</th>
+                    <th class="py-4 px-6 font-semibold">Transaksi Terakhir</th>
+                    <th class="py-4 px-6 font-semibold">Rentang Waktu</th>
+                    <th class="py-4 px-6 font-semibold text-center">Status</th>
+                    <th class="py-4 px-6 font-semibold text-center">Tindakan</th>
+                </tr>
+            </thead>
+            <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
+                {% for item in monitoring_data %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-4 px-6 text-gray-500">{{ loop.index }}</td>
+                    <td class="py-4 px-6">
+                        <div class="font-bold text-gray-800">{{ item.wp.nama_usaha }}</div>
+                        <div class="text-xs text-gray-500 font-mono mt-1">{{ item.wp.npwpd }}</div>
+                    </td>
+                    <td class="py-4 px-6 text-gray-600 font-mono text-xs">
+                        {{ item.waktu_terakhir }}
+                    </td>
+                    <td class="py-4 px-6 font-medium text-gray-700">
+                        {{ item.keterangan_waktu }}
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        {% if item.status == 'Online' %}
+                            <span class="inline-flex items-center gap-1 bg-green-100 text-green-700 py-1 px-3 rounded-full text-xs font-bold">
+                                <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Online
+                            </span>
+                        {% elif item.status == 'Warning' %}
+                            <span class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 py-1 px-3 rounded-full text-xs font-bold">
+                                <i class="fa-solid fa-circle-exclamation"></i> Warning
+                            </span>
+                        {% elif item.status == 'Offline' %}
+                            <span class="inline-flex items-center gap-1 bg-red-100 text-red-700 py-1 px-3 rounded-full text-xs font-bold">
+                                <i class="fa-solid fa-xmark"></i> Offline
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-600 py-1 px-3 rounded-full text-xs font-bold">
+                                Belum Ada Data
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        {% if item.status == 'Offline' or item.status == 'Warning' %}
+                            <!-- TAMBAHAN: onclick function untuk memanggil WhatsApp -->
+                            <button onclick="tegurWP('{{ item.wp.nama_usaha }}', '{{ item.keterangan_waktu }}')" class="text-red-600 hover:text-red-800 text-xs bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md font-medium border border-red-200">
+                                <i class="fa-brands fa-whatsapp mr-1"></i> Tegur WP
+                            </button>
+                        {% else %}
+                            <span class="text-gray-400 text-xs">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Pastikan jQuery & DataTables dimuat di base.html. Jika belum, uncomment baris di bawah: -->
+<!-- <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script> -->
+<!-- <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"> -->
+<!-- <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script> -->
+
+<script>
+    $(document).ready(function() {
+        // Inisialisasi DataTables tanpa merusak urutan prioritas (Offline di atas)
+        $('#tabelMonitoring').DataTable({
+            "language": {
+                "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
+            },
+            "pageLength": 25,
+            "ordering": false, // Dimatikan agar urutan custom dari backend Python tetap terjaga
+            "dom": '<"flex justify-between items-center mb-4"lf>rt<"flex justify-between items-center mt-4"ip>' // Simple styling agar menyatu dengan Tailwind
+        });
+    });
+
+    // Fungsi untuk membuka WhatsApp Web/App dengan template pesan
+    function tegurWP(namaUsaha, rentangWaktu) {
+        // Meminta nomor WA (Bisa dilewati jika no WA sudah ada di database item.wp.no_hp)
+        let noWa = prompt(`Masukkan nomor WhatsApp Wajib Pajak: ${namaUsaha}\n(Gunakan format 628...):`, "628");
+        
+        if (noWa != null && noWa !== "628" && noWa !== "") {
+            // Template pesan resmi dari BPKPD Kota Mojokerto
+            let pesan = `Halo Bapak/Ibu Pimpinan *${namaUsaha}*,\n\nKami dari *BPKPD Kota Mojokerto* menginformasikan bahwa sistem pemantauan kami mendeteksi mesin kasir/aplikasi transaksi di tempat usaha Anda tidak mengirimkan data selama *${rentangWaktu}*.\n\nMohon bantuannya untuk melakukan pengecekan koneksi internet atau menghidupkan kembali alat pencatat pajak demi kelancaran administrasi.\n\nTerima kasih atas kerja samanya.`;
+            
+            // Format URL WA
+            let waUrl = `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
+            
+            // Buka tab baru
+            window.open(waUrl, '_blank');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Sistem POS Wajib Pajak</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="relative min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat" 
+      style="background-image: url('https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=1920&auto=format&fit=crop');">
+
+    <div class="absolute inset-0 bg-slate-900/65 backdrop-blur-sm"></div>
+
+    <div class="relative z-10 bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-2xl max-w-md w-full border border-white/20 overflow-hidden transition-all duration-500">
+        
+        <div class="absolute top-0 right-0 -mr-8 -mt-8 w-32 h-32 rounded-full bg-blue-100 blur-3xl pointer-events-none"></div>
+        
+        <div class="relative z-10 text-center mb-6">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-teal-50 mb-3 shadow-inner border border-teal-100">
+                <i class="fa-solid fa-store text-xl text-teal-600"></i>
+            </div>
+            <h2 class="text-2xl font-extrabold text-gray-900 tracking-tight">Daftar Akun POS</h2>
+            <p class="text-sm text-gray-500 mt-1 font-medium">Integrasi SIMPATDA</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-6 space-y-2">
+            {% for category, message in messages %}
+              <div class="flex items-center bg-red-50 border-l-4 border-red-500 text-red-700 p-3 rounded-r shadow-sm text-sm font-medium">
+                <i class="fa-solid fa-circle-exclamation mr-2"></i> {{ message }}
+              </div>
+            {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div id="alert-box" class="hidden mb-4 p-3 rounded text-sm font-medium border-l-4"></div>
+
+        <div id="step-1" class="space-y-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-2">Masukkan NPWPD Anda</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-id-card text-gray-400"></i>
+                    </div>
+                    <input type="text" id="input-npwpd" placeholder="Contoh: P2200134802003" 
+                           class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white transition-all">
+                </div>
+                <p class="text-[11px] text-gray-500 mt-1.5"><i class="fa-solid fa-circle-info"></i> Pastikan NPWPD sesuai dengan data SIMPATDA.</p>
+            </div>
+            
+            <button type="button" id="btn-cek" onclick="cekNPWPD()" 
+                    class="w-full flex justify-center items-center bg-teal-600 text-white font-bold py-2.5 px-4 rounded-lg shadow hover:bg-teal-700 transition-all">
+                <span id="btn-text">Verifikasi Data</span>
+                <i id="btn-icon" class="fa-solid fa-magnifying-glass ml-2"></i>
+            </button>
+            
+            <p class="text-center text-sm text-gray-600 mt-4">
+                Sudah punya akun? <a href="{{ url_for('auth_bp.login') }}" class="text-teal-600 font-bold hover:underline">Login di sini</a>
+            </p>
+        </div>
+
+        <form id="step-2" action="{{ url_for('auth_bp.register') }}" method="POST" class="hidden space-y-4 animate-fade-in">
+            <div class="p-3 bg-teal-50 border border-teal-100 rounded-lg mb-2">
+                <p class="text-xs text-teal-800 font-bold mb-1">Data Terverifikasi SIMPATDA:</p>
+                <input type="text" name="npwpd" id="form-npwpd" readonly class="w-full bg-transparent text-sm font-mono text-gray-600 focus:outline-none cursor-not-allowed">
+                <input type="text" name="nama_usaha" id="form-nama" readonly class="w-full bg-transparent text-sm font-bold text-gray-800 focus:outline-none cursor-not-allowed uppercase mt-1">
+            </div>
+
+            <div>
+                <label class="block text-gray-700 text-sm font-semibold mb-1">Alamat Usaha</label>
+                <textarea name="alamat" required rows="2" placeholder="Masukkan alamat lengkap..." 
+                          class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white text-sm"></textarea>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-1">Username POS</label>
+                    <input type="text" name="username" required placeholder="Buat username" 
+                           class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white text-sm">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-semibold mb-1">Password</label>
+                    <input type="password" name="password" required placeholder="••••••••" 
+                           class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:bg-white text-sm">
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full flex justify-center items-center bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold py-3 px-4 rounded-lg shadow hover:shadow-lg transform hover:-translate-y-0.5 transition-all mt-4">
+                <i class="fa-solid fa-user-plus mr-2"></i> Buat Akun POS
+            </button>
+        </form>
+
+    </div>
+
+    <script>
+        async function cekNPWPD() {
+            const inputNpwpd = document.getElementById('input-npwpd').value.trim();
+            const alertBox = document.getElementById('alert-box');
+            const btnCek = document.getElementById('btn-cek');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+
+            if (!inputNpwpd) {
+                showAlert('Masukkan NPWPD terlebih dahulu!', 'error');
+                return;
+            }
+
+            // Loading state
+            btnCek.disabled = true;
+            btnText.innerText = 'Memeriksa...';
+            btnIcon.className = 'fa-solid fa-circle-notch fa-spin ml-2';
+            alertBox.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/check_npwpd', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ npwpd: inputNpwpd })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 'sukses') {
+                    // Sukses: Sembunyikan Step 1, Tampilkan Step 2
+                    document.getElementById('step-1').classList.add('hidden');
+                    
+                    const step2 = document.getElementById('step-2');
+                    step2.classList.remove('hidden');
+                    
+                    // Isi form readonly
+                    document.getElementById('form-npwpd').value = result.data.NPWPD;
+                    document.getElementById('form-nama').value = result.data.Nama;
+                    
+                    showAlert('Data ditemukan! Silakan lengkapi form pendaftaran.', 'success');
+                } else {
+                    showAlert(result.pesan, 'error');
+                }
+            } catch (error) {
+                showAlert('Gagal menghubungi server. Periksa koneksi internet Anda.', 'error');
+            } finally {
+                // Kembalikan tombol jika gagal
+                btnCek.disabled = false;
+                btnText.innerText = 'Verifikasi Data';
+                btnIcon.className = 'fa-solid fa-magnifying-glass ml-2';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.classList.remove('hidden', 'bg-red-50', 'text-red-700', 'border-red-500', 'bg-green-50', 'text-green-700', 'border-green-500');
+            
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-50', 'text-red-700', 'border-red-500');
+                alertBox.innerHTML = `<i class="fa-solid fa-circle-exclamation mr-1"></i> ${message}`;
+            } else {
+                alertBox.classList.add('bg-green-50', 'text-green-700', 'border-green-500');
+                alertBox.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${message}`;
+            }
+        }
+    </script>
+</body>
+</html>

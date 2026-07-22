@@ -1,0 +1,92 @@
+{% extends "wp_panel/base_wp.html" %}
+
+{% block content %}
+
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Halo, Pengelola {{ wp_aktif.nama_usaha }}!</h1>
+        <p class="text-gray-500">Ringkasan performa penjualan berdasarkan periode yang dipilih.</p>
+    </div>
+    
+    <!-- PANEL FILTER TANGGAL -->
+    <form method="GET" action="{{ url_for('wp_panel_bp.index') }}" class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 px-2">
+            <span class="text-sm font-medium text-gray-500">Mulai:</span>
+            <input type="date" name="start_date" value="{{ start_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        </div>
+        <div class="flex items-center gap-2 px-2 border-l border-gray-200">
+            <span class="text-sm font-medium text-gray-500">Akhir:</span>
+            <input type="date" name="end_date" value="{{ end_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        </div>
+        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition shadow-sm flex items-center gap-1">
+            <i class="fa-solid fa-filter"></i> Terapkan
+        </button>
+    </form>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pendapatan Bersih</p>
+            <h3 class="text-2xl font-bold text-gray-800 mt-1">Rp {{ "{:,.0f}".format(total_dpp).replace(',', '.') }}</h3>
+        </div>
+        <div class="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Titipan PBJT (10%)</p>
+            <h3 class="text-2xl font-bold text-red-600 mt-1">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</h3>
+            <p class="text-xs text-gray-400 mt-1">Siap disetorkan ke Kas Daerah</p>
+        </div>
+        <div class="h-12 w-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+        <div>
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Transaksi</p>
+            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ total_trx }} Struk</h3>
+        </div>
+        <div class="h-12 w-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">
+            <i class="fa-solid fa-receipt"></i>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+        <h2 class="text-lg font-bold text-gray-800">5 Transaksi Terakhir</h2>
+        <button class="text-teal-600 text-sm font-semibold hover:text-teal-800">Lihat Semua Laporan</button>
+    </div>
+    <table class="w-full text-left">
+        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+            <tr>
+                <th class="py-3 px-6 border-b">No Struk</th>
+                <th class="py-3 px-6 border-b">Waktu</th>
+                <th class="py-3 px-6 border-b text-right">Subtotal</th>
+                <th class="py-3 px-6 border-b text-right">Pajak</th>
+                <th class="py-3 px-6 border-b text-right">Total Bayar</th>
+            </tr>
+        </thead>
+        <tbody class="text-sm">
+            {% for trx in recent_trx %}
+            <tr class="hover:bg-gray-50 border-b border-gray-50">
+                <td class="py-3 px-6 font-medium text-gray-900">{{ trx.no_struk }}</td>
+                <td class="py-3 px-6 text-gray-500">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</td>
+                <td class="py-3 px-6 text-right text-red-500">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
+                <td class="py-3 px-6 text-right font-bold text-teal-700">Rp {{ "{:,.0f}".format(trx.total_dpp + trx.total_pbjt).replace(',', '.') }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="py-8 text-center text-gray-400">Belum ada penjualan hari ini.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

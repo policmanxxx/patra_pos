@@ -1,0 +1,20 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Konfigurasi Sensitif & Environment
+.env
+instance/
+
+# Cache Python
+__pycache__/
+*.py
+*.pyc
+
+# Konfigurasi OS tertentu
+.DS_Store
+Thumbs.db
+
+# Log File
+*.log

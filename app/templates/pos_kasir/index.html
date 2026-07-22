@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <!-- Konfigurasi PWA -->
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#1e40af">
+
+<!-- Dukungan iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PATRA MOJO">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192x192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PATRA MOJO - Hybrid Kasir</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { height: 100dvh; overscroll-behavior-y: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+    /* Tambahkan di bawah gaya (style) Anda yang sudah ada */
+@media print {
+    /* Sembunyikan seluruh tampilan utama aplikasi */
+    body > *:not(#area-struk) {
+        display: none !important;
+    }
+    
+    /* Tampilkan hanya area struk */
+    #area-struk {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 58mm; /* Lebar kertas printer thermal POS-58 */
+        margin: 0;
+        padding: 0 2mm; /* Margin aman kanan-kiri */
+        font-family: 'Courier New', Courier, monospace; /* Font struk kasir */
+        color: #000;
+        background-color: white;
+    }
+    
+    /* Hilangkan header/footer bawaan browser (URL, Tanggal) */
+    @page { 
+        size: auto; 
+        margin: 0; 
+    }
+}    
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col text-gray-800 font-sans overflow-hidden">
+
+    <header class="bg-blue-800 text-white px-4 py-3 shadow-md flex justify-between items-center z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="bg-white/20 text-white p-2 rounded-lg lg:bg-transparent lg:p-0">
+                <i class="fa-solid fa-cash-register text-sm lg:text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-sm lg:text-xl font-bold leading-tight tracking-wide">PATRA MOJO <span class="hidden lg:inline font-normal text-blue-200">- Kasir</span></h1>
+                <p class="text-[10px] text-blue-200 lg:hidden" id="status-text-mobile">Kasir Aktif</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3 lg:gap-4">
+            <div id="status-koneksi-dot" class="lg:hidden w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
+            <div id="status-koneksi-desktop" class="hidden lg:flex px-3 py-1 bg-green-500 rounded-full text-xs font-semibold items-center gap-1 shadow-inner">
+                <i class="fa-solid fa-wifi"></i> <span>Online</span>
+            </div>
+
+            <div class="hidden lg:flex items-center gap-2 bg-blue-700/50 px-3 py-1 rounded-lg border border-blue-600">
+                <i class="fa-solid fa-wallet text-blue-300 text-xs"></i>
+                <span class="text-xs text-blue-100">Hari Ini:</span>
+                <span id="rekap-total-desktop" class="font-bold text-sm text-white" data-hidden="true">******</span>
+                <button onclick="toggleRekapMasking()" class="ml-1 hover:text-white text-blue-300"><i class="fa-solid fa-eye-slash text-xs icon-rekap"></i></button>
+                <button onclick="updateRekap()" class="ml-1 hover:text-white text-blue-300"><i class="fa-solid fa-rotate-right text-[10px]"></i></button>
+            </div>
+            
+            <div class="relative">
+                <button onclick="toggleDropdown()" class="flex items-center gap-2 lg:bg-blue-900 lg:px-3 lg:py-1.5 lg:rounded-lg lg:border lg:border-blue-700 hover:bg-blue-800 transition focus:outline-none">
+                    <i class="fa-solid fa-circle-user text-2xl lg:text-base text-blue-100"></i>
+                    <span class="text-sm font-medium hidden lg:block">{{ current_user.nama_lengkap if current_user.is_authenticated else 'Kasir' }}</span>
+                    <i class="fa-solid fa-chevron-down text-xs text-blue-400 ml-1 hidden lg:block"></i>
+                </button>
+                <div id="user-dropdown" class="hidden absolute right-0 mt-3 lg:mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                    <div class="px-4 py-3 border-b border-gray-100 lg:hidden">
+                        <p class="text-[10px] text-gray-500">Masuk sebagai</p>
+                        <p class="text-sm font-bold text-gray-800 truncate">{{ current_user.nama_lengkap if current_user.is_authenticated else 'User Kasir' }}</p>
+                    </div>
+                    <a href="{{ url_for('wp_panel_bp.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50"><i class="fa-solid fa-gauge w-5"></i> Dashboard</a>
+                    <a href="{{ url_for('auth_bp.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium border-t border-gray-100"><i class="fa-solid fa-arrow-right-from-bracket w-5"></i> Keluar</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="lg:hidden px-4 py-2.5 bg-white border-b border-gray-200 shrink-0 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-wallet text-blue-500 text-sm"></i>
+            <span class="text-xs font-semibold text-gray-600">Omzet Hari Ini</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="rekap-total-mobile" class="font-bold text-sm text-gray-800" data-hidden="true">******</span>
+            <button onclick="toggleRekapMasking()" class="text-gray-400 p-1 hover:text-blue-600"><i class="fa-solid fa-eye-slash text-xs icon-rekap"></i></button>
+            <button onclick="updateRekap()" class="text-gray-400 p-1 hover:text-blue-600"><i class="fa-solid fa-rotate-right text-xs"></i></button>
+        </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
+        
+        <main class="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4 hide-scrollbar relative bg-slate-50">
+            <div class="flex justify-between items-center mb-4 hidden lg:flex">
+                <h2 class="text-lg font-bold text-gray-700">Pilih Menu</h2>
+                <span class="text-xs text-gray-400 font-medium"><i class="fa-solid fa-tags"></i> Kategori: Semua</span>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
+                {% for menu in menus %}
+                <div class="group bg-white rounded-2xl lg:rounded-xl shadow-sm hover:shadow-md hover:border-blue-500 border border-transparent transition-all duration-200 overflow-hidden flex flex-col h-56 lg:h-52 relative cursor-pointer active:scale-[0.98]" 
+                     onclick="tambahKeKeranjang('{{ menu.id }}', '{{ menu.nama|escape }}', {{ menu.harga }}, {{ menu.diskon }}, {{ 'true' if menu.is_taxable else 'false' }}, {{ 'true' if menu.is_tax_inclusive else 'false' }}, {{ 'true' if menu.is_track_stock else 'false' }}, {{ menu.stok }})">
+                    
+                    {% if menu.is_track_stock %}
+                        {% if menu.stok > 0 %}
+                        <span class="absolute top-2 right-2 z-10 bg-slate-900/70 text-white text-[10px] px-2 py-0.5 rounded shadow-sm">Stok: {{ menu.stok }}</span>
+                        {% else %}
+                        <span class="absolute top-2 right-2 z-10 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">HABIS</span>
+                        {% endif %}
+                    {% endif %}
+
+                    <div class="h-28 lg:h-32 bg-gray-100 relative overflow-hidden">
+                        {% if menu.foto %}
+                        <img src="{{ url_for('static', filename='uploads/menu/' ~ menu.foto) }}" alt="{{ menu.nama }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 {% if menu.is_track_stock and menu.stok <= 0 %}grayscale opacity-50{% endif %}">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-gray-300"><i class="fa-solid fa-image text-2xl"></i></div>
+                        {% endif %}
+                        
+                        {% if menu.is_taxable %}
+                            <span class="absolute top-2 left-2 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded backdrop-blur-sm">
+                                {{ '+Pjk' if not menu.is_tax_inclusive else 'Inc.Pjk' }}
+                            </span>
+                        {% endif %}
+                        
+                        <div class="hidden lg:flex absolute inset-0 bg-blue-600/20 items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg"><i class="fa-solid fa-plus"></i></div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-3 flex flex-col justify-between flex-1">
+                        <h3 class="font-semibold text-gray-800 text-xs sm:text-sm leading-snug line-clamp-2">{{ menu.nama }}</h3>
+                        <div class="mt-auto pt-2 flex justify-between items-end">
+                            <div>
+                                {% if menu.diskon > 0 %}
+                                    <p class="text-[10px] text-gray-400 line-through leading-none">Rp {{ "{:,.0f}".format(menu.harga).replace(',', '.') }}</p>
+                                    <span class="text-blue-600 font-bold text-sm lg:text-base leading-none">Rp {{ "{:,.0f}".format(menu.harga - menu.diskon).replace(',', '.') }}</span>
+                                {% else %}
+                                    <span class="text-blue-600 font-bold text-sm lg:text-base leading-none">Rp {{ "{:,.0f}".format(menu.harga).replace(',', '.') }}</span>
+                                {% endif %}
+                            </div>
+                            <button class="lg:hidden bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-plus text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+
+        <div id="floating-cart" class="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] transform transition-transform translate-y-full z-30 rounded-t-2xl pb-safe">
+            <button onclick="toggleCartModal()" class="w-full bg-blue-700 text-white rounded-xl p-3 flex justify-between items-center shadow-md active:bg-blue-800">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-basket-shopping text-xl"></i>
+                        <span id="float-qty" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-blue-700">0</span>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-[10px] text-blue-200 font-medium">Total Pesanan</p>
+                        <p id="float-total" class="font-bold text-sm">Rp 0</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 text-sm font-semibold">Buka <i class="fa-solid fa-chevron-up text-xs"></i></div>
+            </button>
+        </div>
+
+        <div id="cart-backdrop" class="fixed inset-0 bg-gray-900/50 z-40 hidden lg:hidden backdrop-blur-sm" onclick="toggleCartModal()"></div>
+
+        <div id="cart-panel" class="fixed inset-x-0 bottom-0 z-50 w-full h-[85dvh] bg-white flex flex-col rounded-t-3xl shadow-2xl transition-transform duration-300 transform translate-y-full 
+                                    lg:relative lg:inset-auto lg:translate-y-0 lg:h-full lg:w-[380px] xl:w-[450px] lg:rounded-none lg:shadow-[-10px_0_15px_-3px_rgba(0,0,0,0.1)] lg:z-10 lg:border-l lg:border-gray-200 lg:transition-none">
+            
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center shrink-0">
+                <div>
+                    <h2 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-blue-600 hidden lg:inline"></i> Pesanan Saat Ini
+                    </h2>
+                    <p class="text-xs text-gray-500 font-mono mt-0.5">TRX-AUTO-001</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="kosongkanKeranjang()" class="text-xs text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg font-medium transition">
+                        <i class="fa-solid fa-trash hidden lg:inline mr-1"></i> Kosongkan
+                    </button>
+                    <button onclick="toggleCartModal()" class="lg:hidden bg-gray-100 text-gray-600 w-8 h-8 rounded-full flex items-center justify-center">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50" id="keranjang-list">
+                </div>
+
+            <div class="p-4 bg-white border-t border-gray-200 shrink-0 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                
+                <div class="flex gap-2 mb-3">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-utensils absolute left-3 top-2.5 text-gray-400"></i>
+                        <input type="text" id="input-meja" placeholder="No. Meja / Nama" class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                    </div>
+                    <button onclick="bukaDaftarOpenBill()" class="bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 rounded-lg text-sm font-bold border border-amber-300 flex items-center gap-2 transition" title="Lihat Pesanan Tertunda">
+                        <i class="fa-solid fa-list-ul"></i> <span id="badge-open-bill" class="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded-full hidden">0</span>
+                    </button>
+                </div>
+
+                <div class="space-y-1.5 mb-4 text-sm font-medium">
+                    <div class="flex justify-between text-gray-500">
+                        <span>Subtotal (DPP)</span><span id="teks-dpp">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-gray-500">
+                        <span>PBJT (10%)</span><span id="teks-pbjt" class="text-red-500">Rp 0</span>
+                    </div>
+                    <div class="flex justify-between text-base lg:text-lg font-bold text-gray-800 pt-2 border-t border-dashed border-gray-300 mt-2">
+                        <span>Total Bayar</span><span id="teks-grandtotal" class="text-blue-700">Rp 0</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="tombol-simpan-bill" onclick="simpanOpenBill()" disabled class="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:text-gray-500 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition flex justify-center items-center gap-1.5">
+                        <i class="fa-regular fa-clock"></i> Hold Bill
+                    </button>
+                    <button id="tombol-bayar" onclick="prosesPembayaran()" disabled class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 text-white font-bold py-3 rounded-xl text-sm shadow-md transition flex justify-center items-center gap-1.5">
+                        <i class="fa-solid fa-money-bill-wave"></i> Bayar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <div id="modal-open-bill" class="fixed inset-0 bg-gray-900/60 z-[60] hidden flex justify-center items-end lg:items-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+        <div id="modal-open-bill-content" class="bg-gray-50 w-full lg:w-[600px] h-[75dvh] lg:h-auto lg:max-h-[80vh] rounded-t-2xl lg:rounded-2xl shadow-2xl flex flex-col transform translate-y-full lg:translate-y-8 lg:scale-95 transition-all duration-300">
+            <div class="p-4 border-b border-gray-200 bg-white rounded-t-2xl flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-gray-800 text-lg"><i class="fa-solid fa-receipt text-amber-500 mr-2"></i>Pesanan Aktif (Belum Bayar)</h3>
+                <button onclick="tutupDaftarOpenBill()" class="text-gray-400 hover:text-red-500 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto space-y-3" id="list-open-bill-container">
+                </div>
+        </div>
+    </div>
+    <!-- Container Struk (Disembunyikan di layar normal menggunakan inline CSS) -->
+    <div id="area-struk" style="display: none;">
+        <!-- Isi struk akan di-generate (disuntik) oleh JavaScript di sini -->
+    </div>
+    <script>
+
+        
+        let keranjang = [];
+        const tarifPajak = 0.10;
+        let totalRekapAsli = 0;
+        const WP_ID = "{{ current_user.wp_id }}";
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+        }
+
+        // UPDATE PARAMETER: Menerima logika diskon, pajak, dan stok
+        function tambahKeKeranjang(id, nama, harga, diskon, is_taxable, is_tax_inclusive, is_track_stock, stok) {
+            const item = keranjang.find(i => i.id === id);
+            const currentQty = item ? item.qty : 0;
+            
+            // 1. Cek Ketersediaan Stok
+            if (is_track_stock && currentQty >= stok) {
+                alert(`Maaf, stok ${nama} tidak mencukupi (Sisa: ${stok}).`);
+                return;
+            }
+
+            // 2. Tambah ke keranjang
+            if (item) {
+                item.qty += 1;
+            } else {
+                keranjang.push({ 
+                    id, nama, 
+                    harga: parseFloat(harga), 
+                    diskon: parseFloat(diskon), 
+                    is_taxable, is_tax_inclusive, 
+                    is_track_stock, stok: parseInt(stok),
+                    qty: 1 
+                });
+            }
+            
+            renderKeranjang();
+            
+            // Animasi getar di HP
+            if(window.innerWidth < 1024) {
+                const btn = document.querySelector('#floating-cart button');
+                btn.classList.add('scale-[0.98]');
+                setTimeout(() => btn.classList.remove('scale-[0.98]'), 150);
+            }
+        }
+
+        function kosongkanKeranjang() {
+            if(keranjang.length > 0 && confirm('Yakin hapus semua pesanan?')) {
+                keranjang = [];
+                renderKeranjang();
+            }
+        }
+
+        function tambahQty(id) {
+            const item = keranjang.find(i => i.id === id);
+            if (item) {
+                // Pengecekan stok saat menekan tombol "+" di dalam keranjang
+                if (item.is_track_stock && item.qty >= item.stok) {
+                    alert(`Maksimal stok tercapai (Sisa: ${item.stok})`);
+                    return;
+                }
+                item.qty += 1; 
+                renderKeranjang(); 
+            }
+        }
+
+        function kurangiQty(id) {
+            const idx = keranjang.findIndex(i => i.id === id);
+            if (idx !== -1) {
+                if (keranjang[idx].qty > 1) keranjang[idx].qty -= 1;
+                else keranjang.splice(idx, 1);
+                renderKeranjang();
+            }
+        }
+
+        function renderKeranjang() {
+            const listContainer = document.getElementById('keranjang-list');
+            const tombolBayar = document.getElementById('tombol-bayar');
+            const floatBar = document.getElementById('floating-cart');
+            const panel = document.getElementById('cart-panel');
+            
+            let dppTotal = 0, pbjtTotal = 0, grandTotalSemua = 0, totalItem = 0;
+
+            if (keranjang.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-400 mt-10 lg:mt-32">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-3 opacity-30"></i>
+                        <p class="text-sm">Keranjang kosong</p>
+                    </div>`;
+                tombolBayar.disabled = true;
+                
+                floatBar.classList.add('translate-y-full');
+                if(!panel.classList.contains('translate-y-full') && window.innerWidth < 1024) {
+                    toggleCartModal();
+                }
+            } else {
+                listContainer.innerHTML = ''; 
+                tombolBayar.disabled = false;
+                
+                if(panel.classList.contains('translate-y-full') && window.innerWidth < 1024) {
+                    floatBar.classList.remove('translate-y-full');
+                } else {
+                    floatBar.classList.add('translate-y-full');
+                }
+                
+                keranjang.forEach((item) => {
+                    // LOGIKA MATEMATIKA BARU: Harga dikurangi diskon sebelum dihitung jumlah/qty
+                    const hargaBersihSatuan = item.harga - item.diskon;
+                    const hargaTotalBaris = hargaBersihSatuan * item.qty;
+                    
+                    let itemDPP = 0, itemPBJT = 0, itemGrandTotal = 0;
+                    
+                    if (item.is_taxable) {
+                        if (item.is_tax_inclusive) {
+                            // Harga sudah termasuk pajak (Reverse Math)
+                            itemGrandTotal = hargaTotalBaris;
+                            itemDPP = itemGrandTotal / (1 + tarifPajak);
+                            itemPBJT = itemGrandTotal - itemDPP;
+                        } else {
+                            // Harga murni belum kena pajak (Forward Math)
+                            itemDPP = hargaTotalBaris;
+                            itemPBJT = itemDPP * tarifPajak;
+                            itemGrandTotal = itemDPP + itemPBJT;
+                        }
+                    } else {
+                        // Tidak kena pajak
+                        itemDPP = hargaTotalBaris;
+                        itemPBJT = 0;
+                        itemGrandTotal = hargaTotalBaris;
+                    }
+
+                    // Tambahkan ke total keseluruhan
+                    dppTotal += itemDPP; 
+                    pbjtTotal += itemPBJT; 
+                    grandTotalSemua += itemGrandTotal; 
+                    totalItem += item.qty;
+
+                    // Label Info untuk keranjang
+                    let infoLabel = '';
+                    if (item.is_taxable) {
+                        infoLabel = item.is_tax_inclusive ? '<span class="text-amber-600 font-medium">Inc. Pjk</span>' : '<span class="text-blue-500 font-medium">+Pajak</span>';
+                    }
+                    if (item.diskon > 0) {
+                        infoLabel += ` <span class="text-green-600 font-medium ml-1">Disc ${formatRupiah(item.diskon)}</span>`;
+                    }
+
+                    listContainer.innerHTML += `
+                        <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2 animate-fade-in">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm line-clamp-1">${item.nama}</h4>
+                                    <div class="text-[11px] text-gray-500 mt-0.5 flex items-center gap-1">
+                                        <span>${formatRupiah(hargaBersihSatuan)}</span>
+                                        ${infoLabel}
+                                    </div>
+                                </div>
+                                <span class="font-bold text-gray-800 text-sm ml-2 whitespace-nowrap">${formatRupiah(itemGrandTotal)}</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-1 pt-2 border-t border-gray-50">
+                                <button onclick="kurangiQty('${item.id}'); (keranjang.find(i => i.id === '${item.id}') ? null : (event.stopPropagation(), null));" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1.5 rounded flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> Hapus</button>
+                                <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden h-7">
+                                    <button onclick="kurangiQty('${item.id}')" class="w-8 h-full bg-gray-50 active:bg-gray-200 text-gray-600 font-bold">-</button>
+                                    <span class="w-8 text-center text-xs font-bold text-blue-700 leading-7">${item.qty}</span>
+                                    <button onclick="tambahQty('${item.id}')" class="w-8 h-full bg-gray-50 active:bg-gray-200 text-gray-600 font-bold">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            const tombolHold = document.getElementById('tombol-simpan-bill');
+
+                if (tombolHold) {
+                    if (keranjang.length === 0) {
+                        tombolHold.disabled = true;
+                        currentOpenBillId = null;
+                        document.getElementById('input-meja').value = '';
+                    } else {
+                        tombolHold.disabled = false;
+                    }
+                }
+
+                updateBadgeOpenBill();
+
+            document.getElementById('teks-dpp').innerText = formatRupiah(dppTotal);
+            document.getElementById('teks-pbjt').innerText = formatRupiah(pbjtTotal);
+            document.getElementById('teks-grandtotal').innerText = formatRupiah(grandTotalSemua);
+            document.getElementById('float-qty').innerText = totalItem;
+            document.getElementById('float-total').innerText = formatRupiah(grandTotalSemua);
+        }
+
+        // FUNGSI TOGGLE MODAL KERANJANG (MOBILE) (Biarkan sama)
+        function toggleCartModal() {
+            if (window.innerWidth >= 1024) return;
+            const panel = document.getElementById('cart-panel');
+            const backdrop = document.getElementById('cart-backdrop');
+            const floatBar = document.getElementById('floating-cart');
+            
+            if (panel.classList.contains('translate-y-full')) {
+                panel.classList.remove('translate-y-full');
+                backdrop.classList.remove('hidden');
+                floatBar.classList.add('translate-y-full'); 
+            } else {
+                panel.classList.add('translate-y-full');
+                backdrop.classList.add('hidden');
+                if (keranjang.length > 0) floatBar.classList.remove('translate-y-full');
+            }
+        }
+
+        function prosesPembayaran(isOpenBill = false) {
+            if (keranjang.length === 0) return;
+            const mejaFinal = document.getElementById('input-meja').value.trim() || 'Kasir';
+            const IDTertahan = currentOpenBillId;
+            // Hitung ulang payload secara presisi berdasarkan aturan pajak
+            let finalDpp = 0, finalPbjt = 0, finalGrandTotal = 0, finalDiskon = 0;
+            const itemPayloads = keranjang.map(i => {
+                const hargaBersih = i.harga - i.diskon;
+                const totalBaris = hargaBersih * i.qty;
+                let barisDpp = 0, barisPbjt = 0, barisGrandTotal = 0;
+                
+                if(i.is_taxable) {
+                    if(i.is_tax_inclusive) {
+                        barisGrandTotal = totalBaris;
+                        barisDpp = barisGrandTotal / (1 + tarifPajak);
+                        barisPbjt = barisGrandTotal - barisDpp;
+                    } else {
+                        barisDpp = totalBaris;
+                        barisPbjt = barisDpp * tarifPajak;
+                        barisGrandTotal = barisDpp + barisPbjt;
+                    }
+                } else {
+                    barisDpp = totalBaris;
+                    barisPbjt = 0;
+                    barisGrandTotal = totalBaris;
+                }
+
+                finalDpp += barisDpp;
+                finalPbjt += barisPbjt;
+                finalGrandTotal += barisGrandTotal;
+                finalDiskon += (i.diskon * i.qty);
+                
+                // Jika is_track_stock true, kita bisa mengurangi nilai 'stok' di memori UI sementara waktu
+                if (i.is_track_stock) {
+                    i.stok -= i.qty; 
+                    // Reload data kartu menu agar menampilkan "HABIS" tanpa perlu refresh
+                    setTimeout(() => window.location.reload(), 1500); 
+                }
+
+                return {
+                    menu_id: i.id,
+                    nama_item: i.nama,
+                    harga_satuan: i.harga,
+                    qty: i.qty,
+                    subtotal_dpp: barisDpp,
+                    subtotal_pajak: barisPbjt,
+                    total_harga: barisGrandTotal
+                };
+            });
+
+            const waktuSekarang = new Date();
+            waktuSekarang.setHours(waktuSekarang.getHours() + 7); 
+            
+            const payloadStruk = {
+                nama_resto: "{{ nama_resto }}",
+                no_struk: "TRX-" + Date.now(), 
+                waktu_transaksi: waktuSekarang.toISOString().slice(0, 19),
+                total_dpp: finalDpp,
+                total_diskon: finalDiskon,
+                total_pbjt: finalPbjt,
+                grand_total: finalGrandTotal,
+                metode_pembayaran: "Tunai",
+                items: itemPayloads
+            };
+
+            simpanKeAntrean(payloadStruk);
+            cetakStruk(payloadStruk);
+            if (isOpenBill && IDTertahan) {
+                let antrean = JSON.parse(localStorage.getItem('antrean_mojopos')) || [];
+                if (antrean.length > 0) {
+                    let strukTerakhir = antrean[antrean.length - 1];
+                    strukTerakhir.no_meja = mejaFinal;
+                    strukTerakhir.no_struk = IDTertahan; // Paksa ID lama
+                    localStorage.setItem('antrean_mojopos', JSON.stringify(antrean));
+                }
+            }
+            keranjang = [];
+            renderKeranjang();
+            
+            if(window.innerWidth < 1024 && !document.getElementById('cart-panel').classList.contains('translate-y-full')) {
+                toggleCartModal(); 
+            }
+            
+            setTimeout(() => alert("Transaksi Berhasil Disimpan!"), 50);
+            cobaSyncKeServer();
+            updateRekap();
+        }
+
+        function simpanKeAntrean(struk) {
+            let antrean = JSON.parse(localStorage.getItem('antrean_mojopos')) || [];
+            antrean.push(struk);
+            localStorage.setItem('antrean_mojopos', JSON.stringify(antrean));
+            updateStatusIndikator();
+        }
+
+        async function cobaSyncKeServer() {
+            let antrean = JSON.parse(localStorage.getItem('antrean_mojopos')) || [];
+            if (antrean.length === 0 || !navigator.onLine) { updateStatusIndikator(); return; }
+
+            try {
+                const response = await fetch('/api/v1/sync', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wp_id: WP_ID, transaksi: antrean })
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem('antrean_mojopos');
+                    console.log("Sinkronisasi berhasil!");
+                }
+            } catch (error) { console.error("Gagal sinkron", error); }
+            updateStatusIndikator();
+        }
+
+        function updateStatusIndikator() {
+            const dot = document.getElementById('status-koneksi-dot');
+            const teksDesktop = document.getElementById('status-koneksi-desktop');
+            const teksMobile = document.getElementById('status-text-mobile');
+            let antrean = JSON.parse(localStorage.getItem('antrean_mojopos')) || [];
+            
+            if (!navigator.onLine) {
+                dot.className = "lg:hidden w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+                teksDesktop.innerHTML = antrean.length > 0 ? `<i class="fa-solid fa-wifi-slash"></i> Offline (${antrean.length})` : `<i class="fa-solid fa-wifi-slash"></i> Offline`;
+                teksDesktop.className = "hidden lg:flex px-3 py-1 bg-red-500 rounded-full text-xs font-semibold items-center gap-1 shadow-inner";
+                teksMobile.innerText = `Offline (${antrean.length})`;
+            } else if (antrean.length > 0) {
+                dot.className = "lg:hidden w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-pulse";
+                teksDesktop.innerHTML = `<i class="fa-solid fa-rotate"></i> Sync (${antrean.length})`;
+                teksDesktop.className = "hidden lg:flex px-3 py-1 bg-yellow-400 text-yellow-900 rounded-full text-xs font-bold items-center gap-1 shadow-inner";
+                teksMobile.innerText = `Syncing (${antrean.length})`;
+            } else {
+                dot.className = "lg:hidden w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.8)]";
+                teksDesktop.innerHTML = `<i class="fa-solid fa-wifi"></i> Online`;
+                teksDesktop.className = "hidden lg:flex px-3 py-1 bg-green-500 rounded-full text-xs font-semibold items-center gap-1 shadow-inner";
+                teksMobile.innerText = "Kasir Aktif";
+            }
+        }
+
+        window.addEventListener('online', cobaSyncKeServer);
+        window.addEventListener('offline', updateStatusIndikator);
+
+        function updateRekap() {
+            fetch('/rekap-harian')
+                .then(r => r.json())
+                .then(data => {
+                    totalRekapAsli = data.total;
+                    ['mobile', 'desktop'].forEach(type => {
+                        const el = document.getElementById(`rekap-total-${type}`);
+                        if (el && el.getAttribute('data-hidden') === 'false') {
+                            el.innerText = formatRupiah(totalRekapAsli);
+                        }
+                    });
+                }).catch(err => console.error(err));
+        }
+
+        function toggleRekapMasking() {
+            const icons = document.querySelectorAll('.icon-rekap');
+            let isHidden = document.getElementById('rekap-total-desktop').getAttribute('data-hidden') === 'true';
+
+            ['mobile', 'desktop'].forEach(type => {
+                const el = document.getElementById(`rekap-total-${type}`);
+                if (el) {
+                    if (isHidden) {
+                        el.innerText = formatRupiah(totalRekapAsli);
+                        el.setAttribute('data-hidden', 'false');
+                    } else {
+                        el.innerText = '******';
+                        el.setAttribute('data-hidden', 'true');
+                    }
+                }
+            });
+
+            icons.forEach(icon => {
+                if (isHidden) {
+                    icon.classList.replace('fa-eye-slash', 'fa-eye');
+                } else {
+                    icon.classList.replace('fa-eye', 'fa-eye-slash');
+                }
+            });
+        }
+
+        function toggleDropdown() { document.getElementById('user-dropdown').classList.toggle('hidden'); }
+        window.addEventListener('click', (e) => {
+            const dp = document.getElementById('user-dropdown');
+            if (!e.target.closest('.relative') && !dp.classList.contains('hidden')) { dp.classList.add('hidden'); }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStatusIndikator(); updateRekap(); renderKeranjang();
+        });
+
+    // --- LOGIKA OPEN BILL (TABLE MANAGEMENT) ---
+        let currentOpenBillId = null;
+
+
+
+        function simpanOpenBill() {
+            if (keranjang.length === 0) return;
+            
+            const inputMeja = document.getElementById('input-meja').value.trim() || 'Tanpa Meja';
+            let openBills = JSON.parse(localStorage.getItem('open_bills_mojopos')) || [];
+            
+            if (currentOpenBillId) {
+                // Update bill yang sudah ada
+                const idx = openBills.findIndex(b => b.id === currentOpenBillId);
+                if (idx > -1) {
+                    openBills[idx].meja = inputMeja;
+                    openBills[idx].items = keranjang;
+                    openBills[idx].waktu = new Date().toISOString();
+                }
+            } else {
+                // Buat bill baru
+                const newBill = {
+                    id: "OB-" + Date.now(),
+                    meja: inputMeja,
+                    waktu: new Date().toISOString(),
+                    items: keranjang
+                };
+                openBills.push(newBill);
+            }
+            
+            localStorage.setItem('open_bills_mojopos', JSON.stringify(openBills));
+            
+            // Bersihkan keranjang kasir
+            keranjang = [];
+            currentOpenBillId = null;
+            document.getElementById('input-meja').value = '';
+            renderKeranjang();
+            
+            // Tutup keranjang jika di mobile
+            if(window.innerWidth < 1024 && !document.getElementById('cart-panel').classList.contains('translate-y-full')) {
+                toggleCartModal(); 
+            }
+            alert("Pesanan berhasil disimpan sementara!");
+        }
+
+        function updateBadgeOpenBill() {
+            let openBills = JSON.parse(localStorage.getItem('open_bills_mojopos')) || [];
+            const badge = document.getElementById('badge-open-bill');
+            if(openBills.length > 0) {
+                badge.innerText = openBills.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // Modifikasi fungsi prosesPembayaran (Inject no_meja dan bersihkan Open Bill)
+        
+
+       // --- AMBIL DATA OPEN BILL DARI SERVER ---
+        async function bukaDaftarOpenBill() {
+            const modal = document.getElementById('modal-open-bill');
+            const content = document.getElementById('modal-open-bill-content');
+            const container = document.getElementById('list-open-bill-container');
+            
+            container.innerHTML = `<div class="text-center py-10 text-gray-500"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><p>Menarik data meja...</p></div>`;
+            
+            // Animasi Buka Modal
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                if(window.innerWidth >= 1024) content.classList.remove('translate-y-8', 'scale-95');
+                else content.classList.remove('translate-y-full');
+            }, 10);
+
+            try {
+                // TARIK DARI SERVER
+                const response = await fetch('/api/kasir/open-bills');
+                const result = await response.json();
+                const openBills = result.data || [];
+                
+                // Simpan sementara di memori browser untuk mempercepat proses loading ke keranjang
+                localStorage.setItem('temp_server_bills', JSON.stringify(openBills));
+                
+                if(openBills.length === 0) {
+                    container.innerHTML = `<div class="text-center py-10 text-gray-400"><i class="fa-solid fa-check-circle text-4xl mb-3"></i><p>Tidak ada pesanan masuk.</p></div>`;
+                } else {
+                    container.innerHTML = '';
+                    openBills.forEach(bill => {
+                        let qtyTotal = 0;
+                        let hargaPreview = 0;
+                        bill.items.forEach(i => { qtyTotal += i.qty; hargaPreview += ((i.harga - (i.diskon||0)) * i.qty); });
+                        const timeString = new Date(bill.waktu).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+
+                        container.innerHTML += `
+                            <div class="bg-white border border-gray-200 p-4 rounded-xl shadow-sm flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-lg uppercase">${bill.meja}</h4>
+                                    <p class="text-xs text-gray-500 mt-1"><i class="fa-regular fa-clock"></i> ${timeString} • ${qtyTotal} Item</p>
+                                    <p class="text-sm font-bold text-blue-600 mt-1">Est. ${formatRupiah(hargaPreview)}</p>
+                                </div>
+                                <button onclick="lanjutkanOpenBill('${bill.id}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold px-4 py-2 rounded-lg text-sm transition">
+                                    Buka Bill
+                                </button>
+                            </div>
+                        `;
+                    });
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="text-center py-10 text-red-500"><i class="fa-solid fa-triangle-exclamation text-3xl mb-3"></i><p>Gagal terhubung ke server.</p></div>`;
+            }
+        }
+
+   // --- PINDAHKAN PESANAN MEJA KE KERANJANG KASIR ---
+        function lanjutkanOpenBill(id) {
+            let openBills = JSON.parse(localStorage.getItem('temp_server_bills')) || [];
+            const bill = openBills.find(b => b.id === id);
+            
+            if (bill) {
+                currentOpenBillId = bill.id; // Menyimpan No Struk "OB-XXX"
+                document.getElementById('input-meja').value = bill.meja;
+                
+                // PERBAIKAN: Paksa konversi tipe data dari JSON Server menjadi Angka (Float/Int)
+                keranjang = bill.items.map(i => ({
+                    id: i.id,
+                    nama: i.nama,
+                    harga: parseFloat(i.harga) || 0,
+                    diskon: parseFloat(i.diskon) || 0,
+                    qty: parseInt(i.qty) || 1,
+                    is_taxable: i.is_taxable,
+                    is_tax_inclusive: i.is_tax_inclusive,
+                    is_track_stock: i.is_track_stock,
+                    stok: parseInt(i.stok) || 0
+                }));
+                
+                tutupDaftarOpenBill();
+                renderKeranjang(); // Sekarang angka pasti terhitung dengan benar!
+                
+                if(window.innerWidth < 1024 && document.getElementById('cart-panel').classList.contains('translate-y-full')) {
+                    toggleCartModal();
+                }
+            }
+        }
+
+        // --- FUNGSI MENUTUP MODAL OPEN BILL ---
+        function tutupDaftarOpenBill() {
+            const modal = document.getElementById('modal-open-bill');
+            const content = document.getElementById('modal-open-bill-content');
+            
+            modal.classList.add('opacity-0');
+            
+            if(window.innerWidth >= 1024) {
+                content.classList.add('translate-y-8', 'scale-95');
+            } else {
+                content.classList.add('translate-y-full');
+            }
+            
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        } 
+
+        // --- UPDATE FUNGSI PEMBAYARAN KASIR (YANG SEMPAT TERHAPUS) ---
+    function cetakStruk(payload) {
+        const areaStruk = document.getElementById('area-struk');
+        
+        // Format Waktu
+        const dateObj = new Date(payload.waktu_transaksi);
+        const waktuFormat = dateObj.toLocaleDateString('id-ID') + ' ' + dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+        
+        // Generate Daftar Item
+        let itemStrukHTML = '';
+        payload.items.forEach(item => {
+            // PERUBAHAN DI SINI: Hitung harga satuan murni (tanpa pajak) menggunakan DPP
+            const hargaSatuanMurni = item.subtotal_dpp / item.qty;
+            
+            itemStrukHTML += `
+                <div style="font-size: 11px; margin-bottom: 4px;">
+                    <div style="font-weight: bold;">${item.nama_item}</div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>${item.qty} x ${formatRupiah(hargaSatuanMurni)}</span>
+                        <span>${formatRupiah(item.subtotal_dpp)}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Desain Struk Thermal
+        areaStruk.innerHTML = `
+        <style>
+            /* Memaksa browser menghilangkan margin putih saat diprint */
+            @media print {
+                @page {
+                    margin: 0; 
+                }
+                body {
+                    margin: 0;
+                    padding: 0;
+                }
+            }
+        </style>
+
+        <div style="width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; padding: 2px; font-family: 'Arial', sans-serif; color: #000; font-size: 12px; word-wrap: break-word;">
+            
+            <div style="text-align: center; margin-bottom: 10px;">
+                <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo MOJOPOS" style="width: 70%; max-width: 130px; height: auto; display: block; margin: 0 auto;">
+            </div>
+
+            <div style="text-align: center; margin-bottom: 10px;">
+                <h2 style="margin: 0; font-size: 16px; font-weight: bold; color: #000;">${payload.nama_resto}</h2>
+                <p style="margin: 2px 0 0; font-size: 11px; color: #000;">Struk Pembayaran</p>
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+            
+            <div style="font-size: 11px; margin-bottom: 5px; color: #000;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span>No.</span>
+                    <span style="font-weight: bold;">${payload.no_struk}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Tgl.</span>
+                    <span>${waktuFormat}</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+            
+            <div style="margin: 5px 0; font-size: 11px; color: #000;">
+                ${itemStrukHTML}
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+            
+            <div style="font-size: 11px; color: #000;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span>Subtotal (DPP)</span>
+                    <span>${formatRupiah(payload.total_dpp)}</span>
+                </div>
+                ${payload.total_diskon > 0 ? `
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span>Diskon</span>
+                    <span>-${formatRupiah(payload.total_diskon)}</span>
+                </div>` : ''}
+                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span>Pajak (10%)</span>
+                    <span>${formatRupiah(payload.total_pbjt)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 13px; margin-top: 5px; padding-top: 5px; border-top: 2px solid #000;">
+                    <span>TOTAL</span>
+                    <span>${formatRupiah(payload.grand_total)}</span>
+                </div>
+            </div>
+            
+            <div style="border-top: 1px dashed #000; margin: 10px 0 5px 0;"></div>
+            
+            <div style="text-align: center; font-size: 11px; margin-top: 10px; margin-bottom: 10px; color: #000;">
+                <p style="margin: 0 0 2px 0; font-weight: bold;">Terima Kasih</p>
+                <p style="margin: 0;">Atas Kunjungan Anda</p>
+            </div>
+        </div>
+        `;
+
+        // Trigger Print Dialog Browser
+        let img = new Image();
+        img.src = '/static/logo.jpg';
+        img.onload = function() {
+            window.print(); 
+        };
+    }   
+    </script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            // Kita arahkan ke root '/sw.js' (lihat langkah 4)
+            navigator.serviceWorker.register('/sw.js') 
+                .then(registration => console.log('Service Worker terdaftar!'))
+                .catch(error => console.error('Pendaftaran gagal:', error));
+        });
+    }
+</script>
+</body>
+</html>

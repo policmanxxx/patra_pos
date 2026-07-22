@@ -1,0 +1,74 @@
+{% extends "admin_bpkpd/base.html" %}
+
+{% block title %}Kelola Wajib Pajak{% endblock %}
+{% block page_header %}Master Data Wajib Pajak{% endblock %}
+
+{% block content %}
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8 border-t-4 border-blue-600">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fa-solid fa-plus-circle text-blue-500 mr-2"></i> Tambah Wajib Pajak Baru
+        </h2>
+        
+        <form action="{{ url_for('admin_bp.tambah_wp') }}" method="POST">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">NPWPD</label>
+                    <input type="text" name="npwpd" required placeholder="Contoh: P.4.XXXX.XXXX" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Usaha (Resto/Kafe)</label>
+                    <input type="text" name="nama_usaha" required placeholder="Contoh: Warung Nasi Goreng Berkah" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+                <textarea name="alamat" rows="2" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+            </div>
+
+            <button type="submit" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                Simpan Data
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-lg font-semibold text-gray-800">Daftar Wajib Pajak Terdaftar</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-800 text-white text-xs uppercase tracking-wider">
+                        <th class="py-3 px-6 border-b">NPWPD</th>
+                        <th class="py-3 px-6 border-b">Nama Usaha</th>
+                        <th class="py-3 px-6 border-b">Alamat</th>
+                        <th class="py-3 px-6 border-b">Tarif Pajak</th>
+                        <th class="py-3 px-6 border-b text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-700 text-sm">
+                    {% for wp in wps %}
+                    <tr class="hover:bg-slate-50 border-b transition-colors">
+                        <td class="py-3 px-6 font-medium">{{ wp.npwpd }}</td>
+                        <td class="py-3 px-6 font-bold text-slate-800">{{ wp.nama_usaha }}</td>
+                        <td class="py-3 px-6">{{ wp.alamat }}</td>
+                        <td class="py-3 px-6 font-semibold text-red-600">{{ wp.tarif_pbjt }}%</td>
+                        <td class="py-3 px-6 text-center">
+                            {% if wp.is_active %}
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-bold">Aktif</span>
+                            {% else %}
+                            <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-bold">Non-Aktif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="py-6 text-center text-gray-500 italic">Belum ada Wajib Pajak yang terdaftar.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,402 @@
+{% extends "wp_panel/base_wp.html" %}
+
+{% block content %}
+<div class="flex justify-between items-end mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Katalog Menu</h1>
+        <p class="text-gray-500 text-sm mt-1">Kelola daftar menu, diskon, dan stok yang tampil di mesin Kasir Anda.</p>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="mb-6 px-4 py-3 rounded-lg border {% if category == 'error' %}bg-red-50 border-red-200 text-red-600{% else %}bg-teal-50 border-teal-200 text-teal-700{% endif %} flex items-center shadow-sm">
+                <i class="fa-solid fa-circle-check mr-3"></i>
+                <span class="font-medium">{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+    <h2 class="text-base font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-square-plus text-teal-600"></i> Tambah Menu Baru
+    </h2>
+    
+    <form action="{{ url_for('wp_panel_bp.kelola_menu') }}" method="POST" enctype="multipart/form-data">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Menu</label>
+                <input type="text" name="nama_menu" required placeholder="Cth: Nasi Goreng Spesial" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                <div class="flex gap-2">
+                    <select name="kategori_id" id="kategori_select" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none">
+                        <option value="">-- Tanpa Kategori --</option>
+                        {% for kat in kategoris %}
+                        <option value="{{ kat.id }}">{{ kat.nama_kategori }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" onclick="bukaModalKategori()" class="bg-gray-100 hover:bg-teal-50 text-teal-700 border border-gray-300 rounded-lg px-3 transition" title="Tambah Kategori Baru">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Foto Menu (Opsional)</label>
+                <input type="file" name="foto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 transition cursor-pointer">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Harga Normal</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-gray-500 font-semibold">Rp</span>
+                    <input type="number" name="harga_dasar" required placeholder="25000" class="w-full border border-gray-300 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-500 outline-none transition">
+                </div>
+            </div>
+           
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Pajak Restoran (PBJT)</label>
+                <select name="is_tax_inclusive" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none bg-white transition">
+                    <option value="0" selected>Belum Termasuk Pajak (Exclude 10%)</option>
+                    <option value="1">Sudah Termasuk Pajak (Include 10%)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Potongan Diskon (Rupiah)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-gray-500 font-semibold">Rp</span>
+                    <input type="number" name="diskon" value="0" placeholder="0" class="w-full border border-gray-300 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-teal-500 outline-none transition">
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <label class="flex items-center space-x-2 cursor-pointer mb-2">
+                    <input type="checkbox" name="is_track_stock" id="toggleStok" onchange="aturInputStok()" class="w-4 h-4 text-teal-600 rounded border-gray-300 focus:ring-teal-500">
+                    <span class="text-sm font-medium text-gray-700">Lacak Stok Tersedia?</span>
+                </label>
+                <input type="number" name="stok" id="inputStok" disabled value="0" placeholder="Jumlah Stok" class="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-100 focus:ring-2 focus:ring-teal-500 outline-none transition disabled:opacity-50">
+            </div>
+        </div>
+        
+        <div class="mt-5 flex justify-end">
+            <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-6 rounded-lg transition shadow-md">
+                Simpan Menu
+            </button>
+        </div>
+    </form>
+</div>
+
+<div id="modalKategori" class="fixed inset-0 bg-gray-900/60 z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-300" id="modalKategoriContent">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-800">Kategori Baru</h3>
+            <button onclick="tutupModalKategori()" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kategori</label>
+                <input type="text" id="inputNamaKategori" placeholder="Cth: Minuman Dingin" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-teal-500 outline-none">
+                <p id="errorKategori" class="text-red-500 text-xs mt-1 hidden"></p>
+            </div>
+            <button onclick="simpanKategori()" id="btnSimpanKategori" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-lg transition flex justify-center items-center">
+                Simpan
+            </button>
+        </div>
+    </div>
+</div>
+<div id="modalEditMenu" class="fixed inset-0 bg-gray-900/60 z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform scale-95 transition-transform duration-300 mx-4" id="modalEditContent">
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+            <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-pen-to-square text-blue-500 mr-2"></i>Edit Data Menu</h3>
+            <button onclick="tutupModalEdit()" class="text-gray-400 hover:text-red-500 transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        
+        <form id="formEditMenu" method="POST" enctype="multipart/form-data" class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Menu</label>
+                    <input type="text" name="nama_menu" id="edit_nama_menu" required class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                    <select name="kategori_id" id="edit_kategori_id" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">-- Tanpa Kategori --</option>
+                        {% for kat in kategoris %}
+                        <option value="{{ kat.id }}">{{ kat.nama_kategori }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Harga Normal (Tanpa Diskon)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-gray-500 font-semibold">Rp</span>
+                        <input type="number" name="harga_dasar" id="edit_harga_dasar" required class="w-full border border-gray-300 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Pajak Restoran (PBJT)</label>
+                    <select name="is_tax_inclusive" id="edit_is_tax_inclusive" class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                        <option value="0">Belum Termasuk Pajak (Exclude 10%)</option>
+                        <option value="1">Sudah Termasuk Pajak (Include 10%)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Potongan Diskon (Rupiah)</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2.5 text-gray-500 font-semibold">Rp</span>
+                        <input type="number" name="diskon" id="edit_diskon" class="w-full border border-gray-300 rounded-lg p-2.5 pl-10 focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label class="flex items-center space-x-2 cursor-pointer mb-2">
+                        <input type="checkbox" name="is_track_stock" id="edit_toggleStok" onchange="aturInputStokEdit()" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-gray-700">Lacak Stok Tersedia?</span>
+                    </label>
+                    <input type="number" name="stok" id="edit_inputStok" class="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-100 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ganti Foto (Biarkan kosong jika tidak diganti)</label>
+                    <input type="file" name="foto" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition cursor-pointer">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3 border-t pt-4">
+                <button type="button" onclick="tutupModalEdit()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2.5 px-6 rounded-lg transition">Batal</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {% for menu in menus %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group relative">
+        
+        <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
+            {% if menu.kategori %}
+            <span class="bg-gray-900/70 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">{{ menu.kategori.nama_kategori }}</span>
+            {% endif %}
+            
+            {% if menu.is_track_stock %}
+                {% if menu.stok > 5 %}
+                <span class="bg-green-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">Stok: {{ menu.stok }}</span>
+                {% else %}
+                <span class="bg-red-500/90 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm animate-pulse">Sisa: {{ menu.stok }}</span>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="h-40 bg-gray-100 relative">
+            {% if menu.foto_url %}
+            <img src="{{ url_for('static', filename='uploads/menu/' ~ menu.foto_url) }}" class="w-full h-full object-cover">
+            {% else %}
+            <div class="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                <i class="fa-solid fa-utensils text-3xl mb-2 opacity-30"></i>
+                <span class="text-xs font-medium">Tanpa Foto</span>
+            </div>
+            {% endif %}
+            
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition z-10 flex gap-1">
+                <button type="button" onclick="bukaModalEdit('{{ menu.id }}', '{{ menu.nama_menu }}', '{{ menu.kategori_id or '' }}', '{{ menu.harga_dasar | int }}', '{{ menu.diskon | int }}', '{{ 'true' if menu.is_track_stock else 'false' }}', '{{ menu.stok }}')" class="bg-blue-500 hover:bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition">
+                    <i class="fa-solid fa-pen text-sm"></i>
+                </button>
+                <form action="{{ url_for('wp_panel_bp.hapus_menu', id=menu.id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus menu ini?');">
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition">
+                        <i class="fa-solid fa-trash text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="p-4">
+            <h3 class="font-bold text-gray-800 line-clamp-1" title="{{ menu.nama_menu }}">{{ menu.nama_menu }}</h3>
+            <div class="mt-2">
+                {% if menu.diskon > 0 %}
+                    <p class="text-xs text-gray-400 line-through">Rp {{ "{:,.0f}".format(menu.harga_dasar).replace(',', '.') }}</p>
+                    <p class="font-bold text-teal-600 text-lg">Rp {{ "{:,.0f}".format(menu.harga_dasar - menu.diskon).replace(',', '.') }}</p>
+                {% else %}
+                    <p class="text-xs text-transparent">Rp 0</p>
+                    <p class="font-bold text-gray-800 text-lg">Rp {{ "{:,.0f}".format(menu.harga_dasar).replace(',', '.') }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-full py-12 text-center bg-white rounded-xl border border-dashed border-gray-300">
+        <i class="fa-solid fa-book-open text-4xl text-gray-300 mb-3"></i>
+        <h3 class="text-lg font-bold text-gray-600">Buku Menu Kosong</h3>
+        <p class="text-gray-500 mt-1">Anda belum menambahkan menu apa pun.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+    // 1. Logika Toggle Stok
+    function aturInputStok() {
+        const checkbox = document.getElementById('toggleStok');
+        const inputStok = document.getElementById('inputStok');
+        
+        if (checkbox.checked) {
+            inputStok.disabled = false;
+            inputStok.classList.remove('bg-gray-100');
+            inputStok.classList.add('bg-white');
+            inputStok.focus();
+        } else {
+            inputStok.disabled = true;
+            inputStok.classList.add('bg-gray-100');
+            inputStok.classList.remove('bg-white');
+            inputStok.value = 0;
+        }
+    }
+
+    // 2. Logika Modal Kategori (Animasi Tailwind)
+    const modal = document.getElementById('modalKategori');
+    const modalContent = document.getElementById('modalKategoriContent');
+    const inputKat = document.getElementById('inputNamaKategori');
+    const errKat = document.getElementById('errorKategori');
+
+    function bukaModalKategori() {
+        modal.classList.remove('hidden');
+        // Timeout sedikit untuk memicu transisi opacity
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+            inputKat.focus();
+        }, 10);
+    }
+
+    function tutupModalKategori() {
+        modal.classList.add('opacity-0');
+        modalContent.classList.add('scale-95');
+        // Tunggu animasi selesai baru hidden
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            inputKat.value = '';
+            errKat.classList.add('hidden');
+        }, 300);
+    }
+
+    // 3. Logika Submit AJAX Kategori
+    async function simpanKategori() {
+        const nama = inputKat.value.trim();
+        const btn = document.getElementById('btnSimpanKategori');
+        
+        if (!nama) {
+            errKat.innerText = "Nama kategori wajib diisi!";
+            errKat.classList.remove('hidden');
+            return;
+        }
+        
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch("{{ url_for('wp_panel_bp.api_tambah_kategori') }}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nama_kategori: nama })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.status === 'success') {
+                // Tambahkan option baru ke Select HTML
+                const selectElement = document.getElementById('kategori_select');
+                const newOption = new Option(result.nama_kategori, result.id);
+                selectElement.add(newOption);
+                
+                // Langsung pilih opsi yang baru dibuat
+                selectElement.value = result.id;
+                
+                tutupModalKategori();
+            } else {
+                errKat.innerText = result.message || "Gagal menyimpan kategori.";
+                errKat.classList.remove('hidden');
+            }
+        } catch (error) {
+            errKat.innerText = "Terjadi kesalahan jaringan.";
+            errKat.classList.remove('hidden');
+        } finally {
+            btn.innerHTML = 'Simpan';
+            btn.disabled = false;
+        }
+    }
+
+    // === LOGIKA MODAL EDIT MENU ===
+    const modalEdit = document.getElementById('modalEditMenu');
+    const modalEditContent = document.getElementById('modalEditContent');
+
+    // Fungsi ini dipanggil saat tombol Edit (warna biru) di card menu diklik
+    function bukaModalEdit(id, nama, kategori_id, harga, diskon, is_track, stok) {
+        
+        // 1. Tentukan URL Action Form (Kirim ke ID menu yang spesifik)
+        const form = document.getElementById('formEditMenu');
+        // Trik Flask URL For untuk javascript
+        const baseUrl = "{{ url_for('wp_panel_bp.kelola_menu') }}".replace('/menu', '/menu/edit/');
+        form.action = baseUrl + id; 
+
+        // 2. Isi form dengan data yang ada
+        document.getElementById('edit_nama_menu').value = nama;
+        document.getElementById('edit_kategori_id').value = kategori_id;
+        document.getElementById('edit_harga_dasar').value = harga;
+        document.getElementById('edit_diskon').value = diskon;
+        
+        // 3. Atur status Checkbox Stok
+        const toggleStok = document.getElementById('edit_toggleStok');
+        const inputStok = document.getElementById('edit_inputStok');
+        
+        if (is_track === 'true') {
+            toggleStok.checked = true;
+            inputStok.disabled = false;
+            inputStok.value = stok;
+            inputStok.classList.remove('bg-gray-100');
+            inputStok.classList.add('bg-white');
+        } else {
+            toggleStok.checked = false;
+            inputStok.disabled = true;
+            inputStok.value = 0;
+            inputStok.classList.add('bg-gray-100');
+            inputStok.classList.remove('bg-white');
+        }
+
+        // 4. Tampilkan Modal dengan animasi
+        modalEdit.classList.remove('hidden');
+        setTimeout(() => {
+            modalEdit.classList.remove('opacity-0');
+            modalEditContent.classList.remove('scale-95');
+        }, 10);
+    }
+
+    function tutupModalEdit() {
+        modalEdit.classList.add('opacity-0');
+        modalEditContent.classList.add('scale-95');
+        setTimeout(() => {
+            modalEdit.classList.add('hidden');
+        }, 300);
+    }
+
+    function aturInputStokEdit() {
+        const checkbox = document.getElementById('edit_toggleStok');
+        const inputStok = document.getElementById('edit_inputStok');
+        
+        if (checkbox.checked) {
+            inputStok.disabled = false;
+            inputStok.classList.remove('bg-gray-100');
+            inputStok.classList.add('bg-white');
+            inputStok.focus();
+        } else {
+            inputStok.disabled = true;
+            inputStok.classList.add('bg-gray-100');
+            inputStok.classList.remove('bg-white');
+            inputStok.value = 0;
+        }
+    }
+</script>
+{% endblock %}

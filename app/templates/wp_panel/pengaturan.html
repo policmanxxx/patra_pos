@@ -1,0 +1,126 @@
+<!-- app/templates/wp_panel/pengaturan.html -->
+{% extends "wp_panel/base_wp.html" %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Pengaturan Toko</h1>
+    <p class="text-sm text-slate-500 mt-1">Sesuaikan informasi usaha dan logo yang akan dicetak di struk pelanggan.</p>
+</div>
+
+<!-- Menampilkan Flash Message jika sukses/gagal -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="mb-4 p-4 rounded-xl flex items-start gap-3 
+          {% if category == 'success' %}bg-green-50 text-green-700 border border-green-200
+          {% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+          <i class="fa-solid {% if category == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %} mt-0.5"></i>
+          <p class="text-sm font-medium">{{ message }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <!-- Penting: tambahkan enctype="multipart/form-data" agar bisa upload file -->
+    <form action="{{ url_for('wp_panel_bp.pengaturan_toko') }}" method="POST" enctype="multipart/form-data" class="p-6 md:p-8">
+        
+        <div class="flex flex-col md:flex-row gap-8 md:gap-12">
+            
+            <!-- BAGIAN KIRI: UPLOAD LOGO -->
+            <div class="flex flex-col items-center justify-start w-full md:w-1/3">
+                <label class="block text-sm font-semibold text-slate-700 mb-4 w-full text-center">Logo Usaha</label>
+                
+                <!-- Kotak Preview Logo -->
+                <div class="relative group cursor-pointer w-48 h-48 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden transition-colors hover:border-brand-500 hover:bg-brand-50" onclick="document.getElementById('logo-upload').click()">
+                    
+                    <!-- Gambar Default / Existing -->
+                    <img id="logo-preview" 
+                         src="{{ url_for('static', filename='uploads/logos/' + wp.logo_url) if wp.logo_url and wp.logo_url != 'default_logo.png' else 'https://ui-avatars.com/api/?name=' + wp.nama_usaha + '&background=0f766e&color=fff&size=200' }}" 
+                         alt="Logo Usaha" 
+                         class="w-full h-full object-cover">
+                    
+                    <!-- Overlay Hover -->
+                    <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fa-solid fa-camera text-white text-2xl mb-2"></i>
+                        <span class="text-white text-xs font-medium">Ubah Logo</span>
+                    </div>
+                </div>
+                
+                <!-- Input File Asli (Disembunyikan) -->
+                <input type="file" id="logo-upload" name="logo" accept=".jpg, .jpeg, .png" class="hidden" onchange="previewImage(event)">
+                
+                <p class="text-[11px] text-slate-400 mt-4 text-center px-4">
+                    Disarankan format PNG transparan dengan rasio 1:1. Maksimal ukuran 2MB.
+                </p>
+            </div>
+
+            <!-- BAGIAN KANAN: FORM TEKS -->
+            <div class="w-full md:w-2/3 space-y-6">
+                
+                <!-- Form NPWPD (Readonly/Disabled) -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">NPWPD (Nomor Pokok Wajib Pajak Daerah)</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-id-card text-slate-400"></i>
+                        </div>
+                        <input type="text" value="{{ wp.npwpd }}" disabled 
+                               class="bg-slate-100 text-slate-500 w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none cursor-not-allowed">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1.5"><i class="fa-solid fa-circle-info mr-1"></i>NPWPD tidak dapat diubah karena terhubung dengan sistem BPKPD.</p>
+                </div>
+
+                <!-- Form Nama Usaha -->
+                <div>
+                    <label for="nama_usaha" class="block text-sm font-semibold text-slate-700 mb-1.5">Nama Usaha / Restoran <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-store text-slate-400"></i>
+                        </div>
+                        <input type="text" id="nama_usaha" name="nama_usaha" value="{{ wp.nama_usaha }}" required 
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all text-slate-700">
+                    </div>
+                </div>
+
+                <!-- Form Alamat -->
+                <div>
+                    <label for="alamat" class="block text-sm font-semibold text-slate-700 mb-1.5">Alamat Lengkap <span class="text-red-500">*</span></label>
+                    <textarea id="alamat" name="alamat" rows="3" required
+                              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all text-slate-700 placeholder-slate-400"
+                              placeholder="Contoh: Jl. Sudirman No. 12, Kelurahan X, Kecamatan Y">{{ wp.alamat }}</textarea>
+                </div>
+
+                <!-- Tombol Submit -->
+                <div class="pt-4 flex items-center justify-end border-t border-slate-100 mt-8">
+                    <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shadow-brand-500/30 flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Script untuk memunculkan preview gambar saat user memilih file -->
+<script>
+    function previewImage(event) {
+        const input = event.target;
+        if (input.files && input.files[0]) {
+            // Validasi ukuran file (misal max 2MB)
+            if (input.files[0].size > 2 * 1024 * 1024) {
+                alert("Ukuran file terlalu besar! Maksimal 2MB.");
+                input.value = ""; // Reset input
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('logo-preview').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+{% endblock %}
