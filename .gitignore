@@ -2,10 +2,12 @@
 venv/
 env/
 ENV/
+__pycache__/
 
 # Konfigurasi Sensitif & Environment
 .env
 instance/
+requirements.txt
 
 
 # Konfigurasi OS tertentu

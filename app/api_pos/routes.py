@@ -5,7 +5,7 @@ from app.models import WajibPajak,KategoriMenu, Menu,Transaksi,TransaksiDetail,U
 from werkzeug.security import check_password_hash
 from .sync_handler import process_bulk_transactions
 from flask_jwt_extended import create_access_token,jwt_required, get_jwt
-from flask_login import login_required
+from flask_login import login_required,current_user
 # Mendefinisikan Blueprint untuk API POS
 api_bp = Blueprint('api_pos', __name__)
 

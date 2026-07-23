@@ -33,18 +33,22 @@ def monitoring_kepatuhan():
     monitoring_data = []
     stats = {'online': 0, 'warning': 0, 'offline': 0, 'belum_ada_data': 0}
 
-    for wp, waktu_terakhir_utc in results:
+    for wp, waktu_terakhir in results: # Ubah nama variabel agar tidak bingung
         waktu_str = "-"
         status = "Belum Ada Data"
         keterangan_waktu = "Belum pernah kirim data"
 
-        if waktu_terakhir_utc:
-            # Sesuaikan dengan WIB jika data di DB disimpan dalam UTC
-            waktu_terakhir_wib = waktu_terakhir_utc + timedelta(hours=7)
+        if waktu_terakhir:
+            # FIX 1: Hapus penambahan timedelta(hours=7) karena data dari kasir sudah WIB
+            waktu_terakhir_wib = waktu_terakhir
             waktu_str = waktu_terakhir_wib.strftime('%d-%m-%Y %H:%M:%S')
             
             # Hitung selisih waktu dari sekarang ke transaksi terakhir
             selisih = wib_now - waktu_terakhir_wib
+            
+            # FIX 2: Pengaman jika jam kasir lebih cepat dari server (mencegah minus)
+            if selisih.total_seconds() < 0:
+                selisih = timedelta(seconds=0)
             
             # Buat keterangan waktu yang human-readable
             if selisih.days > 0:
@@ -52,10 +56,13 @@ def monitoring_kepatuhan():
             else:
                 jam = selisih.seconds // 3600
                 menit = (selisih.seconds % 3600) // 60
+                
                 if jam > 0:
                     keterangan_waktu = f"{jam} jam {menit} menit yang lalu"
-                else:
+                elif menit > 0:
                     keterangan_waktu = f"{menit} menit yang lalu"
+                else:
+                    keterangan_waktu = "Baru saja"
 
             # Klasifikasi Kepatuhan/Status
             if selisih <= timedelta(hours=24):
