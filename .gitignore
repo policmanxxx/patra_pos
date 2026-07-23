@@ -8,6 +8,7 @@ __pycache__/
 .env
 instance/
 requirements.txt
+__pycache__
 
 
 # Konfigurasi OS tertentu

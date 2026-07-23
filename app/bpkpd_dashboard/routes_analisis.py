@@ -28,31 +28,31 @@ def analisis_jam_sibuk():
     if wp_id:
         wp_terpilih = WajibPajak.query.get(wp_id)
         
-        # Penyesuaian Timezone untuk PostgreSQL (Asumsi data disimpan dalam UTC)
-        # Mengkonversi UTC ke WIB (Asia/Jakarta) agar jam operasional akurat
-        waktu_wib = func.timezone('Asia/Jakarta', func.timezone('UTC', Transaksi.waktu_transaksi))
-        
+        # FIX 1: Hapus konversi timezone. Gunakan Transaksi.waktu_transaksi secara langsung.
         # Query agregasi data per jam
         query = db.session.query(
-            extract('hour', waktu_wib).label('jam'),
+            extract('hour', Transaksi.waktu_transaksi).label('jam'),
             func.count(Transaksi.id).label('jumlah_trx'),
             func.sum(Transaksi.grand_total).label('omzet')
         ).filter(Transaksi.wp_id == wp_id)
 
-        # Filter tambahan berdasarkan hari jika dipilih (PostgreSQL dow: 0=Minggu, 6=Sabtu)
+        # FIX 2: Terapkan juga pada filter hari
         if hari is not None and hari != -1:
-            query = query.filter(extract('dow', waktu_wib) == hari)
+            query = query.filter(extract('dow', Transaksi.waktu_transaksi) == hari)
 
         hasil = query.group_by('jam').all()
 
         # Mapping hasil query ke dalam array 24 jam
         for row in hasil:
-            jam_index = int(row.jam)
-            data_transaksi[jam_index] = row.jumlah_trx
-            data_omzet[jam_index] = float(row.omzet or 0)
-            
-            total_trx_keseluruhan += row.jumlah_trx
-            total_omzet_keseluruhan += float(row.omzet or 0)
+            # Karena extract('hour') bisa mengembalikan None jika tidak ada data (meski secara logika group_by mencegahnya),
+            # kita amankan dengan casting.
+            if row.jam is not None:
+                jam_index = int(row.jam)
+                data_transaksi[jam_index] = row.jumlah_trx
+                data_omzet[jam_index] = float(row.omzet or 0)
+                
+                total_trx_keseluruhan += row.jumlah_trx
+                total_omzet_keseluruhan += float(row.omzet or 0)
 
     return render_template(
         'admin_bpkpd/analisis_jam_sibuk.html',
