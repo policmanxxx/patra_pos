@@ -27,7 +27,7 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pendapatan Bersih</p>
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pendapatan</p>
             <h3 class="text-2xl font-bold text-gray-800 mt-1">Rp {{ "{:,.0f}".format(total_dpp).replace(',', '.') }}</h3>
         </div>
         <div class="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">
@@ -37,9 +37,9 @@
     
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
         <div>
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Titipan PBJT (10%)</p>
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">PBJT (10%)</p>
             <h3 class="text-2xl font-bold text-red-600 mt-1">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</h3>
-            <p class="text-xs text-gray-400 mt-1">Siap disetorkan ke Kas Daerah</p>
+            <p class="text-xs text-gray-400 mt-1">Pajak Daerah</p>
         </div>
         <div class="h-12 w-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl">
             <i class="fa-solid fa-file-invoice-dollar"></i>

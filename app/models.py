@@ -12,19 +12,22 @@ from werkzeug.security import generate_password_hash, check_password_hash
 class WajibPajak(db.Model):
     __tablename__ = 'wajib_pajak'
     
-    # Menggunakan UUID agar aman dan mendukung sinkronisasi offline
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     npwpd = db.Column(db.String(50), unique=True, nullable=False)
     nama_usaha = db.Column(db.String(150), nullable=False)
     alamat = db.Column(db.Text)
     kode_kecamatan = db.Column(db.String(5))
     kode_kelurahan = db.Column(db.String(5))
-    tarif_pbjt = db.Column(db.Numeric(5, 2), default=10.00) # Default Pajak 10%
+    tarif_pbjt = db.Column(db.Numeric(5, 2), default=10.00)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Logo Utama (Berwarna, untuk panel/UI)
     logo_url = db.Column(db.String(255), nullable=True, default='default_logo.png')
+    
+    # Logo Struk (Tambahan Baru: Hitam Putih, ukuran kecil untuk thermal)
+    logo_struk_url = db.Column(db.String(255), nullable=True) 
 
-    # Relasi ke tabel lain
     users = db.relationship('User', backref='wajib_pajak', lazy=True, cascade="all, delete-orphan")
     menus = db.relationship('Menu', backref='wajib_pajak', lazy=True, cascade="all, delete-orphan")
     transaksis = db.relationship('Transaksi', backref='wajib_pajak', lazy=True)

@@ -70,7 +70,6 @@
     <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-30 hidden transition-opacity duration-300 opacity-0 md:hidden" onclick="toggleSidebar()"></div>
 
     <!-- SIDEBAR (Desain Bersih & Estetik) -->
-    <!-- (Kode Sidebar SAMA PERSIS dengan sebelumnya) -->
     <aside id="sidebar" class="w-72 sidebar-light flex flex-col shadow-2xl md:shadow-none z-40 fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out shrink-0">
         
         <button onclick="toggleSidebar()" class="md:hidden absolute top-5 right-5 text-slate-400 hover:text-slate-700 focus:outline-none p-2 bg-slate-100 rounded-full h-8 w-8 flex items-center justify-center">
@@ -83,7 +82,6 @@
             
             <!-- Kotak Logo Utama -->
             <div class="h-20 w-20 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-brand-500 text-3xl mb-4 shadow-xl shadow-brand-500/10 transform rotate-3 hover:rotate-0 transition-transform duration-300 overflow-hidden">
-                <!-- Logika penampil gambar logo -->
                 <img src="{{ url_for('static', filename='uploads/logos/' + current_user.wajib_pajak.logo_url) if current_user.wajib_pajak.logo_url and current_user.wajib_pajak.logo_url != 'default_logo.png' else 'https://ui-avatars.com/api/?name=' + current_user.wajib_pajak.nama_usaha + '&background=0f766e&color=fff&size=200' }}" 
                      alt="Logo {{ current_user.wajib_pajak.nama_usaha }}" 
                      class="w-full h-full object-cover">
@@ -96,7 +94,7 @@
             </p>
         </div>
 
-        <nav class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5 custom-scrollbar">
+        <nav class="flex-1 overflow-y-auto px-4 py-2 space-y-1.5 custom-scrollbar pb-6">
             
             <div class="px-3 pb-2 pt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                 Menu Utama
@@ -115,19 +113,12 @@
                 </div>
                 <span class="font-medium text-sm">Kelola Menu</span>
             </a>
-            <!-- Tambahkan ini di base_wp.html -->
+            
             <a href="{{ url_for('wp_panel_bp.pengaturan_toko') }}" class="menu-item flex items-center px-4 py-2.5 rounded-xl text-slate-600 hover:bg-brand-50 hover:text-brand-600 group">
                 <div class="w-8 h-8 rounded-lg bg-slate-50 group-hover:bg-white flex items-center justify-center mr-3 shadow-sm shadow-slate-200/50 group-hover:shadow-brand-100 transition-all">
                     <i class="fa-solid fa-gear text-slate-400 group-hover:text-brand-500"></i>
                 </div>
                 <span class="font-medium text-sm">Pengaturan Toko</span>
-            </a>
-            
-            <a href="{{ url_for('ui_pos_bp.halaman_kasir') }}" class="menu-item flex items-center px-4 py-2.5 rounded-xl text-brand-600 bg-brand-50 hover:bg-brand-100 group border border-brand-100 shadow-sm mt-2">
-                <div class="w-8 h-8 rounded-lg bg-white flex items-center justify-center mr-3 shadow-sm text-brand-500">
-                    <i class="fa-solid fa-cash-register"></i>
-                </div>
-                <span class="font-bold text-sm">Buka Kasir (POS)</span>
             </a>
 
             <div class="px-3 pb-2 pt-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
@@ -168,24 +159,6 @@
             </div>
         </nav>
         
-        <div class="p-4 border-t border-slate-100 shrink-0 bg-slate-50/50">
-            <div class="flex items-center justify-between px-2 mb-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm">
-                        {{ current_user.nama_lengkap[:1]|upper if current_user.nama_lengkap else 'U' }}
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold text-slate-700 truncate w-32">{{ current_user.nama_lengkap }}</span>
-                        <span class="text-[10px] text-slate-400 capitalize">{{ current_user.role }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <a href="{{ url_for('auth_bp.logout') }}" class="flex items-center justify-center w-full px-4 py-2.5 bg-white border border-red-100 text-red-500 rounded-xl hover:bg-red-50 hover:border-red-200 transition-all font-medium text-sm shadow-sm group">
-                <i class="fa-solid fa-arrow-right-from-bracket mr-2 group-hover:-translate-x-1 transition-transform"></i>
-                Keluar
-            </a>
-        </div>
     </aside>
 
     <!-- AREA KANAN (HEADER + MAIN CONTENT) -->
@@ -199,9 +172,29 @@
                 </div>
                 <h1 class="font-bold text-base truncate max-w-[200px]">{{ current_user.wajib_pajak.nama_usaha }}</h1>
             </div>
-            <button onclick="toggleSidebar()" class="text-slate-500 hover:text-brand-600 focus:outline-none p-2 rounded-md hover:bg-slate-100 transition">
-                <i class="fa-solid fa-bars text-xl"></i>
-            </button>
+            
+            <div class="flex items-center gap-2">
+                <!-- Tombol Dropdown Profil (Mobile) -->
+                <div class="relative">
+                    <button onclick="toggleDropdown('mobile-dropdown')" class="h-8 w-8 rounded-full border border-slate-200 overflow-hidden focus:outline-none">
+                        <img src="https://ui-avatars.com/api/?name={{ current_user.nama_lengkap.split()[0] if current_user.nama_lengkap else 'Admin' }}&background=0f766e&color=fff" alt="User">
+                    </button>
+                    <!-- Dropdown Mobile -->
+                    <div id="mobile-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
+                        <a href="{{ url_for('ui_pos_bp.halaman_kasir') }}" class="flex items-center px-4 py-2 text-sm text-brand-600 hover:bg-brand-50 font-medium">
+                            <i class="fa-solid fa-cash-register w-5 text-center mr-2"></i> Buka Kasir
+                        </a>
+                        <div class="h-px bg-slate-100 my-1"></div>
+                        <a href="{{ url_for('auth_bp.logout') }}" class="flex items-center px-4 py-2 text-sm text-red-500 hover:bg-red-50 font-medium">
+                            <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center mr-2"></i> Keluar
+                        </a>
+                    </div>
+                </div>
+
+                <button onclick="toggleSidebar()" class="text-slate-500 hover:text-brand-600 focus:outline-none p-2 rounded-md hover:bg-slate-100 transition">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
         </header>
 
         <!-- HEADER DESKTOP (Hanya tampil di Tablet/Laptop) -->
@@ -220,11 +213,38 @@
                 <button class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition tooltip-container">
                     <i class="fa-regular fa-circle-question"></i>
                 </button>
-                <!-- Tombol Notifikasi (dengan badge merah) -->
+                <!-- Tombol Notifikasi -->
                 <button class="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-brand-600 hover:bg-brand-50 transition relative">
                     <i class="fa-regular fa-bell"></i>
                     <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
                 </button>
+
+                <!-- Tombol Dropdown Profil (Desktop) -->
+                <div class="relative ml-2">
+                    <button id="profile-btn" onclick="toggleDropdown('desktop-dropdown')" class="flex items-center gap-2 focus:outline-none hover:bg-slate-50 p-1.5 rounded-full transition border border-transparent hover:border-slate-200">
+                        <img src="https://ui-avatars.com/api/?name={{ current_user.nama_lengkap.split()[0] if current_user.nama_lengkap else 'Admin' }}&background=0f766e&color=fff" 
+                             alt="User" class="w-8 h-8 rounded-full shadow-sm">
+                        <i class="fa-solid fa-chevron-down text-xs text-slate-400 mr-1"></i>
+                    </button>
+
+                    <!-- Dropdown Desktop -->
+                    <div id="desktop-dropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50 transform origin-top-right transition-all">
+                        <div class="px-4 py-3 border-b border-slate-50 mb-1">
+                            <p class="text-sm font-bold text-slate-800">{{ current_user.nama_lengkap if current_user.nama_lengkap else 'Administrator' }}</p>
+                            <p class="text-xs text-slate-500 truncate mt-0.5">{{ current_user.email if current_user.email else 'admin@resto.com' }}</p>
+                        </div>
+                        
+                        <a href="{{ url_for('ui_pos_bp.halaman_kasir') }}" class="flex items-center px-4 py-2.5 text-sm text-brand-600 hover:bg-brand-50 hover:text-brand-700 transition font-medium group">
+                            <i class="fa-solid fa-cash-register w-5 text-center mr-2 group-hover:scale-110 transition-transform"></i> Buka Kasir (POS)
+                        </a>
+                        
+                        <div class="h-px bg-slate-100 my-1"></div>
+                        
+                        <a href="{{ url_for('auth_bp.logout') }}" class="flex items-center px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 hover:text-red-600 transition font-medium group">
+                            <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center mr-2 group-hover:translate-x-1 transition-transform"></i> Keluar
+                        </a>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -265,6 +285,28 @@
                 setTimeout(() => overlay.classList.add('hidden'), 300);
             }
         }
+
+        // FUNGSI TOGGLE DROPDOWN (Desktop & Mobile)
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.classList.toggle('hidden');
+        }
+
+        // MENUTUP DROPDOWN SAAT KLIK DI LUAR AREA
+        window.addEventListener('click', function(e) {
+            const desktopDropdown = document.getElementById('desktop-dropdown');
+            const mobileDropdown = document.getElementById('mobile-dropdown');
+            const profileBtn = document.getElementById('profile-btn');
+            
+            // Tutup desktop dropdown
+            if (desktopDropdown && !desktopDropdown.contains(e.target) && !profileBtn.contains(e.target)) {
+                desktopDropdown.classList.add('hidden');
+            }
+            // Tutup mobile dropdown
+            if (mobileDropdown && !e.target.closest('.relative')) {
+                mobileDropdown.classList.add('hidden');
+            }
+        });
 
         // FUNGSI TOGGLE SUBMENU LAPORAN
         function toggleLaporan() {
