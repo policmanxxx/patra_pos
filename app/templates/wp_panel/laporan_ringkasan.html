@@ -1,78 +1,313 @@
 {% extends "wp_panel/base_wp.html" %}
 {% block content %}
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Ringkasan Laporan</h1>
-    <!-- Tambahkan form filter tanggal yang sama seperti di laporan rinci Anda -->
+
+<!-- Load Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-800">Ringkasan Kinerja</h1>
+        <p class="text-gray-500 text-sm mt-1">Pantau performa penjualan, laba, dan tren restoran Anda.</p>
+    </div>
+    
+    <!-- Form Filter Tanggal (Konsisten dengan Laporan Rinci) -->
+    <form method="GET" action="{{ url_for('wp_panel_bp.laporan_ringkasan') }}" class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-2">
+        <div class="flex items-center gap-2 px-2">
+            <span class="text-sm font-medium text-gray-500">Mulai:</span>
+            <input type="date" name="start_date" value="{{ start_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        </div>
+        <div class="flex items-center gap-2 px-2 border-l border-gray-200">
+            <span class="text-sm font-medium text-gray-500">Akhir:</span>
+            <input type="date" name="end_date" value="{{ end_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        </div>
+        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1">
+            <i class="fa-solid fa-filter"></i> Filter
+        </button>
+    </form>
 </div>
 
-<!-- 1. KARTU SALES SUMMARY & PROFIT -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-        <p class="text-sm text-gray-500 font-medium">Total Transaksi</p>
-        <p class="text-2xl font-bold text-gray-800">{{ total_transaksi }}</p>
+<!-- ========================================== -->
+<!-- 1. KARTU METRIK UTAMA (TOP CARDS)          -->
+<!-- ========================================== -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Card Omzet -->
+    <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-5 rounded-2xl shadow-md text-white relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        <div class="absolute -right-4 -top-4 opacity-20 transform group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-wallet text-8xl"></i>
+        </div>
+        <p class="text-blue-100 text-sm font-medium mb-1">Omzet Penjualan (DPP)</p>
+        <h2 class="text-2xl font-bold mb-2">Rp {{ "{:,.0f}".format(total_omzet_dpp).replace(',', '.') }}</h2>
+        <div class="inline-block bg-white/20 rounded-md px-2 py-1 text-xs font-medium backdrop-blur-sm border border-white/20">
+            + PBJT (10%): Rp {{ "{:,.0f}".format(total_pajak).replace(',', '.') }}
+        </div>
     </div>
-    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-        <p class="text-sm text-gray-500 font-medium">Omzet Kotor (DPP)</p>
-        <p class="text-2xl font-bold text-blue-600">Rp {{ "{:,.0f}".format(total_omzet_dpp).replace(',', '.') }}</p>
+
+    <!-- Card Laba Kotor -->
+    <div class="bg-gradient-to-br from-teal-500 to-teal-700 p-5 rounded-2xl shadow-md text-white relative overflow-hidden group hover:-translate-y-1 transition-transform">
+        <div class="absolute -right-4 -top-4 opacity-20 transform group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-sack-dollar text-8xl"></i>
+        </div>
+        <p class="text-teal-100 text-sm font-medium mb-1">Laba Kotor (Profit)</p>
+        <h2 class="text-2xl font-bold mb-2">Rp {{ "{:,.0f}".format(laba_kotor).replace(',', '.') }}</h2>
+        <div class="inline-block bg-white/20 rounded-md px-2 py-1 text-xs font-medium backdrop-blur-sm border border-white/20">
+            HPP Terpakai: Rp {{ "{:,.0f}".format(total_hpp).replace(',', '.') }}
+        </div>
     </div>
-    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-teal-500">
-        <p class="text-sm text-gray-500 font-medium">Laba Kotor (Profit)</p>
-        <p class="text-2xl font-bold text-teal-600">Rp {{ "{:,.0f}".format(laba_kotor).replace(',', '.') }}</p>
-        <p class="text-xs text-gray-400 mt-1">Omzet - Total HPP</p>
+
+    <!-- Card Total Transaksi -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm font-medium mb-1">Total Struk / Pesanan</p>
+                <h2 class="text-3xl font-bold text-gray-800">{{ "{:,.0f}".format(total_transaksi).replace(',', '.') }} <span class="text-sm font-normal text-gray-400">trx</span></h2>
+            </div>
+            <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500">
+                <i class="fa-solid fa-receipt text-xl"></i>
+            </div>
+        </div>
     </div>
-    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm border-l-4 border-l-red-500">
-        <p class="text-sm text-gray-500 font-medium">Pajak Titipan (PBJT)</p>
-        <p class="text-2xl font-bold text-red-600">Rp {{ "{:,.0f}".format(total_pajak).replace(',', '.') }}</p>
+
+    <!-- Card Rata-rata Transaksi (AOV) -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-center relative overflow-hidden">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-gray-500 text-sm font-medium mb-1">Rata-rata Transaksi</p>
+                <h2 class="text-2xl font-bold text-gray-800">Rp {{ "{:,.0f}".format(rata_rata_transaksi).replace(',', '.') }}</h2>
+            </div>
+            <div class="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-500">
+                <i class="fa-solid fa-cart-shopping text-xl"></i>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- 2. METODE PEMBAYARAN -->
-    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-        <h3 class="font-bold text-gray-800 border-b pb-2 mb-3">Metode Pembayaran</h3>
-        <ul class="space-y-3">
-            {% for bayar in pembayaran_summary %}
-            <li class="flex justify-between items-center">
+<!-- ========================================== -->
+<!-- 2. AREA GRAFIK & METODE PEMBAYARAN         -->
+<!-- ========================================== -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    
+    <!-- GRAFIK TREN (Memakan ruang 2 kolom di layar besar) -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-gray-800">Grafik Tren Penjualan</h3>
+            <span class="text-xs font-medium bg-teal-50 text-teal-600 px-2 py-1 rounded-md">Periode Aktif</span>
+        </div>
+        <!-- Canvas untuk Chart.js -->
+        <div class="relative w-full h-[300px] flex-1">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- METODE PEMBAYARAN -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
+        <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Metode Pembayaran</h3>
+        {% if pembayaran_summary %}
+            <div class="space-y-4 flex-1">
+                {% for bayar in pembayaran_summary %}
                 <div>
-                    <span class="font-medium text-gray-700">{{ bayar.metode_pembayaran }}</span>
-                    <span class="text-xs text-gray-400 ml-2">({{ bayar.jumlah }} trx)</span>
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-700 flex items-center gap-2">
+                            {% if bayar.metode|lower == 'cash' or bayar.metode|lower == 'tunai' %}
+                                <i class="fa-solid fa-money-bill-wave text-green-500"></i>
+                            {% elif bayar.metode|lower == 'qris' %}
+                                <i class="fa-solid fa-qrcode text-blue-500"></i>
+                            {% else %}
+                                <i class="fa-solid fa-credit-card text-purple-500"></i>
+                            {% endif %}
+                            {{ bayar.metode }}
+                        </span>
+                        <span class="font-bold text-gray-900">Rp {{ "{:,.0f}".format(bayar.total).replace(',', '.') }}</span>
+                    </div>
+                    <!-- Visual Progress Bar -->
+                    <div class="w-full bg-gray-100 rounded-full h-2 mt-1 relative overflow-hidden">
+                        <div class="bg-teal-500 h-2 rounded-full" style="width: {{ bayar.persentase }}%;"></div>
+                    </div>
+                    <div class="text-right mt-0.5">
+                        <span class="text-[10px] text-gray-400 font-medium">{{ bayar.jumlah }} transaksi ({{ bayar.persentase }}%)</span>
+                    </div>
                 </div>
-                <span class="font-bold text-gray-900">Rp {{ "{:,.0f}".format(bayar.total).replace(',', '.') }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- 3. BARANG TERLARIS -->
-    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-        <h3 class="font-bold text-gray-800 border-b pb-2 mb-3">Top 5 Menu Terlaris</h3>
-        <ul class="space-y-3">
-            {% for item in menu_terlaris %}
-            <li class="flex justify-between items-center">
-                <span class="font-medium text-gray-700">{{ item.nama_item_snapshot }}</span>
-                <span class="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full font-bold">Terjual {{ item.total_qty }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- 4. PERINGATAN STOK -->
-    <div class="bg-white p-5 rounded-xl border border-red-200 shadow-sm bg-red-50">
-        <h3 class="font-bold text-red-800 border-b border-red-200 pb-2 mb-3">
-            <i class="fa-solid fa-triangle-exclamation"></i> Peringatan Stok
-        </h3>
-        {% if stok_menipis %}
-        <ul class="space-y-3">
-            {% for item in stok_menipis %}
-            <li class="flex justify-between items-center">
-                <span class="font-medium text-gray-700">{{ item.nama_menu }}</span>
-                <span class="text-red-600 font-bold text-sm">Sisa: {{ item.stok }}</span>
-            </li>
-            {% endfor %}
-        </ul>
+                {% endfor %}
+            </div>
         {% else %}
-        <p class="text-sm text-gray-500 text-center py-4">Semua stok aman.</p>
+            <div class="flex-1 flex flex-col items-center justify-center text-gray-400">
+                <i class="fa-solid fa-cash-register text-3xl mb-2 text-gray-200"></i>
+                <p class="text-sm">Belum ada transaksi</p>
+            </div>
         {% endif %}
     </div>
+
 </div>
+
+<!-- ========================================== -->
+<!-- 3. TOP ITEM & PERINGATAN STOK              -->
+<!-- ========================================== -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-6">
+    
+    <!-- BARANG TERLARIS -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 class="font-bold text-gray-800">Top 5 Menu Terlaris</h3>
+            <i class="fa-solid fa-fire text-orange-500"></i>
+        </div>
+        {% if menu_terlaris %}
+            <ul class="space-y-3">
+                {% for item in menu_terlaris %}
+                <li class="flex justify-between items-center p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div class="flex items-center gap-3">
+                        <!-- Indikator Peringkat / Rank -->
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold 
+                            {% if loop.index == 1 %} bg-yellow-100 text-yellow-600 border border-yellow-200
+                            {% elif loop.index == 2 %} bg-slate-100 text-slate-500 border border-slate-200
+                            {% elif loop.index == 3 %} bg-orange-100 text-orange-600 border border-orange-200
+                            {% else %} bg-gray-50 text-gray-400 {% endif %}">
+                            {{ loop.index }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-700">{{ item.nama_item_snapshot }}</p>
+                            <p class="text-xs text-gray-400">Omzet: Rp {{ "{:,.0f}".format(item.total_pendapatan).replace(',', '.') }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-teal-50 text-teal-700 text-xs px-2.5 py-1 rounded-md font-bold">Terjual {{ item.total_qty }}</span>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-sm text-gray-500 text-center py-6">Belum ada data penjualan menu.</p>
+        {% endif %}
+    </div>
+
+    <!-- PERINGATAN STOK -->
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden">
+        <div class="absolute left-0 top-0 h-full w-1.5 bg-red-500"></div>
+        <div class="flex justify-between items-center mb-4 border-b pb-2 pl-3">
+            <h3 class="font-bold text-gray-800">Peringatan Stok Menipis</h3>
+            <i class="fa-solid fa-triangle-exclamation text-red-500"></i>
+        </div>
+        
+        {% if stok_menipis %}
+            <div class="overflow-y-auto max-h-[250px] custom-scrollbar pl-3 pr-2">
+                <ul class="space-y-3">
+                    {% for item in stok_menipis %}
+                    <li class="flex justify-between items-center p-3 bg-red-50/50 rounded-lg border border-red-100/50">
+                        <div>
+                            <span class="font-bold text-gray-700 block">{{ item.nama_menu }}</span>
+                            <span class="text-xs text-gray-500">Batas minimum: {{ item.batas_stok_minimum }}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-red-600 font-bold text-lg bg-red-100 px-3 py-1 rounded-md">{{ item.stok }}</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% else %}
+            <div class="flex flex-col items-center justify-center text-center py-8 pl-3">
+                <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-green-500 mb-3">
+                    <i class="fa-solid fa-check-double text-2xl"></i>
+                </div>
+                <p class="text-sm font-bold text-gray-700">Kondisi Stok Aman</p>
+                <p class="text-xs text-gray-500 mt-1">Tidak ada item yang berada di bawah batas minimum.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- SCRIPT UNTUK MERENDER GRAFIK CHART.JS -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ambil data dari Jinja backend
+        const labels = {{ label_grafik | safe }};
+        const dataPenjualan = {{ data_grafik | safe }};
+
+        const ctx = document.getElementById('salesChart');
+        
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Omzet Penjualan (Rp)',
+                        data: dataPenjualan,
+                        borderColor: '#0d9488', /* brand-600 */
+                        backgroundColor: 'rgba(13, 148, 136, 0.1)', /* Teal dengan transparansi */
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#0d9488',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4 /* Membuat garis melengkung halus */
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // Sembunyikan legenda agar lebih bersih
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            padding: 12,
+                            titleFont: { size: 13, family: "'Inter', sans-serif" },
+                            bodyFont: { size: 14, weight: 'bold', family: "'Inter', sans-serif" },
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f1f5f9', /* slate-100 */
+                                drawBorder: false,
+                            },
+                            ticks: {
+                                font: { family: "'Inter', sans-serif", size: 11 },
+                                color: '#94a3b8',
+                                callback: function(value) {
+                                    // Ringkas angka besar (Contoh: 1.000.000 -> 1 Jt)
+                                    if (value >= 1000000) {
+                                        return (value / 1000000).toFixed(1) + ' Jt';
+                                    } else if (value >= 1000) {
+                                        return (value / 1000).toFixed(0) + ' Rb';
+                                    }
+                                    return value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false, /* Sembunyikan garis grid vertikal */
+                                drawBorder: false,
+                            },
+                            ticks: {
+                                font: { family: "'Inter', sans-serif", size: 11 },
+                                color: '#94a3b8',
+                                maxTicksLimit: 7 /* Jangan tampilkan terlalu banyak tanggal menumpuk */
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
 {% endblock %}

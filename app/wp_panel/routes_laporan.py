@@ -6,6 +6,7 @@ from app.extensions import db
 from app.models import Transaksi, Menu, WajibPajak,TransaksiDetail
 from sqlalchemy import func
 from datetime import datetime, date
+import json
 
 
 # ==========================================
@@ -20,7 +21,9 @@ def laporan_penjualan():
 
     wp_id_string = str(current_user.wp_id)
 
-    # Logika Filter Tanggal (Sama dengan Dashboard)
+    # 1. Ambil Parameter Pagination & Filter Tanggal
+    page = request.args.get('page', 1, type=int)
+    
     hari_ini = date.today()
     default_start = hari_ini.replace(day=1).strftime('%Y-%m-%d')
     default_end = hari_ini.strftime('%Y-%m-%d')
@@ -31,23 +34,47 @@ def laporan_penjualan():
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
-    # Ambil SEMUA transaksi pada rentang tanggal tersebut (diurutkan dari yang terbaru)
-    transaksi_lengkap = Transaksi.query.filter_by(wp_id=wp_id_string)\
-        .filter(Transaksi.waktu_transaksi >= start_date)\
-        .filter(Transaksi.waktu_transaksi <= end_date)\
-        .order_by(Transaksi.waktu_transaksi.desc()).all()
+    # 2. HITUNG GRAND TOTAL PERIODE (Untuk Ringkasan di Atas Tabel)
+    summary_query = db.session.query(
+        func.count(Transaksi.id).label('total_trx'),
+        func.sum(Transaksi.total_dpp).label('total_dpp'),
+        func.sum(Transaksi.total_pbjt).label('total_pbjt')
+    ).filter(
+        Transaksi.wp_id == wp_id_string,
+        Transaksi.waktu_transaksi >= start_date,
+        Transaksi.waktu_transaksi <= end_date
+    ).first()
 
-    # Hitung Grand Total untuk Footer Tabel
-    total_dpp_semua = sum([float(trx.total_dpp or 0) for trx in transaksi_lengkap])
-    total_pbjt_semua = sum([float(trx.total_pbjt or 0) for trx in transaksi_lengkap])
+    periode_total_trx = summary_query.total_trx or 0
+    periode_total_dpp = float(summary_query.total_dpp or 0)
+    periode_total_pbjt = float(summary_query.total_pbjt or 0)
+    periode_total_bayar = periode_total_dpp + periode_total_pbjt
+
+    # 3. Base Query untuk Tabel (Sesuai Filter)
+    query = Transaksi.query.filter_by(wp_id=wp_id_string)\
+        .filter(Transaksi.waktu_transaksi >= start_date)\
+        .filter(Transaksi.waktu_transaksi <= end_date)
+
+    # 4. Eksekusi Pagination
+    transaksi_paginated = query.order_by(Transaksi.waktu_transaksi.desc()).paginate(page=page, per_page=15, error_out=False)
+
+    # 5. Hitung Subtotal Halaman Saat Ini (Untuk Footer Tabel)
+    total_dpp_halaman = sum([float(trx.total_dpp or 0) for trx in transaksi_paginated.items])
+    total_pbjt_halaman = sum([float(trx.total_pbjt or 0) for trx in transaksi_paginated.items])
 
     return render_template(
-        'wp_panel/laporan.html',
-        transaksi=transaksi_lengkap,
+        'wp_panel/laporan.html', 
+        transaksi=transaksi_paginated,
         start_date=start_date_str,
         end_date=end_date_str,
-        total_dpp=total_dpp_semua,
-        total_pbjt=total_pbjt_semua
+        # Variabel untuk Card Ringkasan Periode
+        periode_total_trx=periode_total_trx,
+        periode_total_dpp=periode_total_dpp,
+        periode_total_pbjt=periode_total_pbjt,
+        periode_total_bayar=periode_total_bayar,
+        # Variabel untuk Footer Tabel
+        total_dpp_halaman=total_dpp_halaman,
+        total_pbjt_halaman=total_pbjt_halaman
     )
 
 
@@ -61,7 +88,7 @@ def laporan_ringkasan():
 
     wp_id = current_user.wp_id
 
-    # Filter Tanggal (Bisa diambil dari request.args seperti kode Anda)
+    # Filter Tanggal
     hari_ini = date.today()
     start_date_str = request.args.get('start_date', hari_ini.replace(day=1).strftime('%Y-%m-%d'))
     end_date_str = request.args.get('end_date', hari_ini.strftime('%Y-%m-%d'))
@@ -69,7 +96,7 @@ def laporan_ringkasan():
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
-    # 1. SALES SUMMARY & PROFIT (Laba/Rugi)
+    # 1. SALES SUMMARY & PROFIT
     transaksi_qs = Transaksi.query.filter_by(wp_id=wp_id, status='Selesai').filter(
         Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date
     )
@@ -78,7 +105,6 @@ def laporan_ringkasan():
     total_omzet_dpp = db.session.query(func.sum(Transaksi.total_dpp)).filter_by(wp_id=wp_id, status='Selesai').filter(Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date).scalar() or 0
     total_pajak = db.session.query(func.sum(Transaksi.total_pbjt)).filter_by(wp_id=wp_id, status='Selesai').filter(Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date).scalar() or 0
     
-    # Hitung HPP total dari TransaksiDetail
     total_hpp = db.session.query(func.sum(TransaksiDetail.hpp_snapshot * TransaksiDetail.qty))\
         .join(Transaksi)\
         .filter(Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai', 
@@ -86,12 +112,27 @@ def laporan_ringkasan():
     
     laba_kotor = float(total_omzet_dpp) - float(total_hpp)
 
-    # 2. RINCIAN METODE PEMBAYARAN
-    pembayaran_summary = db.session.query(
+    # TAMBAHAN: Rata-rata per Transaksi (AOV)
+    rata_rata_transaksi = float(total_omzet_dpp) / total_transaksi if total_transaksi > 0 else 0
+
+    # 2. RINCIAN METODE PEMBAYARAN (Hitung persentase untuk progress bar)
+    pembayaran_query = db.session.query(
         Transaksi.metode_pembayaran, func.sum(Transaksi.grand_total).label('total'), func.count(Transaksi.id).label('jumlah')
     ).filter_by(wp_id=wp_id, status='Selesai')\
      .filter(Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date)\
      .group_by(Transaksi.metode_pembayaran).all()
+
+    # Hitung total grand total untuk mencari persentase pembayaran
+    grand_total_all_payment = sum([p.total for p in pembayaran_query]) or 1 # hindari div by zero
+    
+    pembayaran_summary = []
+    for p in pembayaran_query:
+        pembayaran_summary.append({
+            'metode': p.metode_pembayaran,
+            'total': p.total,
+            'jumlah': p.jumlah,
+            'persentase': round((p.total / grand_total_all_payment) * 100, 1)
+        })
 
     # 3. BARANG TERLARIS (Top 5)
     menu_terlaris = db.session.query(
@@ -103,23 +144,39 @@ def laporan_ringkasan():
      .group_by(TransaksiDetail.nama_item_snapshot)\
      .order_by(db.desc('total_qty')).limit(5).all()
 
-    # 4. PERINGATAN STOK MENIPIS (Real-time, tidak terpengaruh filter tanggal)
+    # 4. PERINGATAN STOK MENIPIS
     stok_menipis = Menu.query.filter(
         Menu.wp_id == wp_id, 
         Menu.is_track_stock == True, 
         Menu.stok <= Menu.batas_stok_minimum,
         Menu.is_active == True
-    ).order_by(Menu.stok.asc()).all()
+    ).order_by(Menu.stok.asc()).limit(10).all() # Batasi 10 agar UI tidak terlalu panjang
+
+    # 5. TAMBAHAN: DATA GRAFIK PENJUALAN PER HARI
+    grafik_query = db.session.query(
+        func.date(Transaksi.waktu_transaksi).label('tanggal'),
+        func.sum(Transaksi.total_dpp).label('omzet')
+    ).filter(
+        Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai',
+        Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date
+    ).group_by(func.date(Transaksi.waktu_transaksi)).order_by('tanggal').all()
+
+    # Format untuk Chart.js
+    label_grafik = [g.tanggal.strftime('%d %b') for g in grafik_query]
+    data_grafik = [float(g.omzet) for g in grafik_query]
 
     return render_template(
         'wp_panel/laporan_ringkasan.html',
         start_date=start_date_str, end_date=end_date_str,
         total_transaksi=total_transaksi, total_omzet_dpp=total_omzet_dpp, 
         total_pajak=total_pajak, laba_kotor=laba_kotor, total_hpp=total_hpp,
+        rata_rata_transaksi=rata_rata_transaksi, # Dikirim ke Template
         pembayaran_summary=pembayaran_summary,
         menu_terlaris=menu_terlaris,
-        stok_menipis=stok_menipis
-    )    
+        stok_menipis=stok_menipis,
+        label_grafik=json.dumps(label_grafik),   # Dikirim ke Template sbg JSON string
+        data_grafik=json.dumps(data_grafik)      # Dikirim ke Template sbg JSON string
+    ) 
 # ==========================================
 # API UNTUK MODAL DETAIL TRANSAKSI
 # ==========================================

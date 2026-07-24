@@ -1,92 +1,267 @@
 {% extends "wp_panel/base_wp.html" %}
 
 {% block content %}
+<!-- Load Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+<!-- ========================================== -->
+<!-- HEADER & QUICK ACTIONS                     -->
+<!-- ========================================== -->
+<div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">Halo, Pengelola {{ wp_aktif.nama_usaha }}!</h1>
-        <p class="text-gray-500">Ringkasan performa penjualan berdasarkan periode yang dipilih.</p>
+        <h1 class="text-2xl font-bold text-gray-800">Halo, {{ wp_aktif.nama_usaha }}! 👋</h1>
+        <p class="text-gray-500 text-sm mt-1">Selamat datang di pusat kendali operasional Anda hari ini.</p>
     </div>
     
-    <!-- PANEL FILTER TANGGAL -->
-    <form method="GET" action="{{ url_for('wp_panel_bp.index') }}" class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-2">
+    <!-- Quick Actions -->
+    <div class="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+        <a href="{{ url_for('wp_panel_bp.kelola_menu') }}" class="flex-1 xl:flex-none bg-white border border-gray-200 hover:border-teal-500 hover:text-teal-600 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm text-center flex items-center justify-center gap-2 group">
+            <i class="fa-solid fa-utensils text-gray-400 group-hover:text-teal-500 transition-colors"></i> Kelola Menu
+        </a>
+        <a href="{{ url_for('ui_pos_bp.halaman_kasir') }}" class="flex-1 xl:flex-none bg-teal-600 hover:bg-teal-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all shadow-sm shadow-teal-500/30 text-center flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cash-register"></i> Buka Kasir POS
+        </a>
+    </div>
+</div>
+
+<!-- PANEL FILTER TANGGAL -->
+<div class="mb-6 bg-white p-3 rounded-xl shadow-sm border border-gray-100 inline-block w-full sm:w-auto">
+    <form method="GET" action="{{ url_for('wp_panel_bp.index') }}" class="flex flex-wrap items-center gap-2">
         <div class="flex items-center gap-2 px-2">
-            <span class="text-sm font-medium text-gray-500">Mulai:</span>
-            <input type="date" name="start_date" value="{{ start_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+            <i class="fa-regular fa-calendar text-gray-400 text-sm"></i>
+            <input type="date" name="start_date" value="{{ start_date }}" class="text-sm text-gray-600 font-medium bg-transparent outline-none cursor-pointer">
         </div>
-        <div class="flex items-center gap-2 px-2 border-l border-gray-200">
-            <span class="text-sm font-medium text-gray-500">Akhir:</span>
-            <input type="date" name="end_date" value="{{ end_date }}" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border">
+        <span class="text-gray-300">|</span>
+        <div class="flex items-center gap-2 px-2">
+            <input type="date" name="end_date" value="{{ end_date }}" class="text-sm text-gray-600 font-medium bg-transparent outline-none cursor-pointer">
         </div>
-        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition shadow-sm flex items-center gap-1">
-            <i class="fa-solid fa-filter"></i> Terapkan
+        <button type="submit" class="bg-gray-100 hover:bg-teal-50 text-gray-600 hover:text-teal-600 px-3 py-1.5 rounded-md text-xs font-bold transition ml-auto sm:ml-2">
+            Terapkan Filter
         </button>
     </form>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Pendapatan</p>
-            <h3 class="text-2xl font-bold text-gray-800 mt-1">Rp {{ "{:,.0f}".format(total_dpp).replace(',', '.') }}</h3>
+<!-- ========================================== -->
+<!-- 4 KARTU STATISTIK UTAMA                    -->
+<!-- ========================================== -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
+        <div class="absolute w-1 h-full bg-blue-500 left-0 top-0"></div>
+        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-receipt"></i>
         </div>
-        <div class="h-12 w-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">
+        <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Transaksi</p>
+            <h3 class="text-2xl font-bold text-gray-800">{{ total_trx }}</h3>
+        </div>
+    </div>
+
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
+        <div class="absolute w-1 h-full bg-teal-500 left-0 top-0"></div>
+        <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
             <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Omzet Bersih</p>
+            <h3 class="text-xl font-bold text-gray-800">Rp {{ "{:,.0f}".format(total_dpp).replace(',', '.') }}</h3>
         </div>
     </div>
     
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">PBJT (10%)</p>
-            <h3 class="text-2xl font-bold text-red-600 mt-1">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</h3>
-            <p class="text-xs text-gray-400 mt-1">Pajak Daerah</p>
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
+        <div class="absolute w-1 h-full bg-red-500 left-0 top-0"></div>
+        <div class="w-12 h-12 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-building-columns"></i>
         </div>
-        <div class="h-12 w-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl">
-            <i class="fa-solid fa-file-invoice-dollar"></i>
+        <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">PBJT Daerah</p>
+            <h3 class="text-xl font-bold text-gray-800">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</h3>
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-        <div>
-            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Transaksi</p>
-            <h3 class="text-2xl font-bold text-blue-600 mt-1">{{ total_trx }} Struk</h3>
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 relative overflow-hidden group">
+        <div class="absolute w-1 h-full bg-indigo-500 left-0 top-0"></div>
+        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-sack-dollar"></i>
         </div>
-        <div class="h-12 w-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">
-            <i class="fa-solid fa-receipt"></i>
+        <div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Kotor</p>
+            <h3 class="text-xl font-bold text-gray-800">Rp {{ "{:,.0f}".format(total_dpp + total_pbjt).replace(',', '.') }}</h3>
         </div>
     </div>
 </div>
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-        <h2 class="text-lg font-bold text-gray-800">5 Transaksi Terakhir</h2>
-        <button class="text-teal-600 text-sm font-semibold hover:text-teal-800">Lihat Semua Laporan</button>
+<!-- ========================================== -->
+<!-- LAYOUT 2 KOLOM UTAMA                       -->
+<!-- ========================================== -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+    
+    <!-- KOLOM KIRI (Besar: 2/3) -->
+    <div class="xl:col-span-2 space-y-6">
+        
+        <!-- WIDGET GRAFIK MINI -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-gray-800">Pergerakan Omzet</h3>
+            </div>
+            <div class="relative w-full h-[220px]">
+                <canvas id="miniChart"></canvas>
+            </div>
+        </div>
+
+        <!-- TRANSAKSI TERBARU -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <h2 class="font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-gray-400"></i> Aktivitas Terkini
+                </h2>
+                <a href="{{ url_for('wp_panel_bp.laporan_penjualan') }}" class="text-teal-600 text-xs font-bold hover:text-teal-800 bg-teal-50 px-3 py-1.5 rounded-lg transition-colors">
+                    Lihat Semua
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-white text-gray-400 text-xs uppercase font-semibold border-b border-gray-100">
+                        <tr>
+                            <th class="py-3 px-5">Struk</th>
+                            <th class="py-3 px-5">Waktu</th>
+                            <th class="py-3 px-5 text-right">Total Bayar</th>
+                            <th class="py-3 px-5 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        {% for trx in recent_trx %}
+                        <tr class="hover:bg-gray-50 border-b border-gray-50 transition-colors">
+                            <td class="py-3 px-5 font-mono text-xs font-bold text-gray-700">{{ trx.no_struk }}</td>
+                            <td class="py-3 px-5 text-gray-500">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M') }}</td>
+                            <td class="py-3 px-5 text-right font-bold text-gray-900">Rp {{ "{:,.0f}".format(trx.total_dpp + trx.total_pbjt).replace(',', '.') }}</td>
+                            <td class="py-3 px-5 text-center">
+                                <span class="bg-green-50 text-green-600 border border-green-200 text-[10px] uppercase font-bold px-2 py-1 rounded-md">Selesai</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="py-10 text-center text-gray-400">
+                                <div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-2 text-xl">
+                                    <i class="fa-solid fa-mug-hot"></i>
+                                </div>
+                                <p>Belum ada transaksi di rentang tanggal ini.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
-    <table class="w-full text-left">
-        <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
-            <tr>
-                <th class="py-3 px-6 border-b">No Struk</th>
-                <th class="py-3 px-6 border-b">Waktu</th>
-                <th class="py-3 px-6 border-b text-right">Subtotal</th>
-                <th class="py-3 px-6 border-b text-right">Pajak</th>
-                <th class="py-3 px-6 border-b text-right">Total Bayar</th>
-            </tr>
-        </thead>
-        <tbody class="text-sm">
-            {% for trx in recent_trx %}
-            <tr class="hover:bg-gray-50 border-b border-gray-50">
-                <td class="py-3 px-6 font-medium text-gray-900">{{ trx.no_struk }}</td>
-                <td class="py-3 px-6 text-gray-500">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M') }}</td>
-                <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</td>
-                <td class="py-3 px-6 text-right text-red-500">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
-                <td class="py-3 px-6 text-right font-bold text-teal-700">Rp {{ "{:,.0f}".format(trx.total_dpp + trx.total_pbjt).replace(',', '.') }}</td>
-            </tr>
+
+    <!-- KOLOM KANAN (Kecil: 1/3) -->
+    <div class="space-y-6">
+        
+        <!-- WIDGET PERHATIAN (ALERTS) -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+            <h3 class="font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
+                <i class="fa-regular fa-bell text-gray-400"></i> Perlu Perhatian
+            </h3>
+            
+            {% if stok_menipis %}
+                <div class="space-y-3">
+                    {% for item in stok_menipis %}
+                    <div class="flex items-start gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                        <div class="mt-0.5 text-orange-500">
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-gray-800 leading-tight">{{ item.nama_menu }}</p>
+                            <p class="text-xs text-orange-600 mt-0.5 font-medium">Stok tersisa: {{ item.stok }}</p>
+                        </div>
+                        <a href="{{ url_for('wp_panel_bp.kelola_menu') }}" class="text-xs font-bold bg-white text-gray-600 px-2 py-1 rounded shadow-sm border border-gray-200 hover:text-teal-600">Restock</a>
+                    </div>
+                    {% endfor %}
+                </div>
             {% else %}
-            <tr>
-                <td colspan="5" class="py-8 text-center text-gray-400">Belum ada penjualan hari ini.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                <div class="text-center py-6">
+                    <div class="w-12 h-12 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <i class="fa-solid fa-check text-xl"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700">Semua Terkendali!</p>
+                    <p class="text-xs text-gray-500 mt-1">Stok bahan dan operasional aman.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- WIDGET INFO PAJAK -->
+        <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-xl shadow-md text-white relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 opacity-10">
+                <i class="fa-solid fa-file-invoice text-9xl"></i>
+            </div>
+            <h3 class="font-bold text-slate-200 mb-2">Kewajiban Pajak (PBJT)</h3>
+            <p class="text-sm text-slate-400 mb-4 leading-relaxed">Nilai pajak yang telah dipungut dari pelanggan berdasarkan transaksi saat ini:</p>
+            <h2 class="text-3xl font-bold text-white mb-1">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</h2>
+            <div class="mt-4 pt-4 border-t border-slate-700/50">
+                <a href="{{ url_for('wp_panel_bp.laporan_penjualan') }}" class="text-teal-400 hover:text-teal-300 text-sm font-bold flex items-center gap-1 transition-colors">
+                    Lihat Rincian <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+        </div>
+
+    </div>
 </div>
+
+<!-- SCRIPT GRAFIK MINI -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const labels = {{ label_grafik | safe }};
+        const data = {{ data_grafik | safe }};
+        const ctx = document.getElementById('miniChart');
+        
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'bar', // Menggunakan bar chart untuk variasi visual di dashboard
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Omzet',
+                        data: data,
+                        backgroundColor: '#14b8a6', // brand-500
+                        borderRadius: 4,
+                        barThickness: 'flex',
+                        maxBarThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: "'Inter', sans-serif" },
+                            bodyFont: { weight: 'bold', family: "'Inter', sans-serif" },
+                            callbacks: {
+                                label: function(context) {
+                                    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            display: false // Sembunyikan angka Y axis agar bersih
+                        },
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: {
+                                font: { family: "'Inter', sans-serif", size: 10 },
+                                color: '#94a3b8',
+                                maxTicksLimit: 5
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
 {% endblock %}

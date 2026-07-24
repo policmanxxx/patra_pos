@@ -20,14 +20,65 @@
         <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1">
             <i class="fa-solid fa-filter"></i> Filter
         </button>
-        <!-- Tombol Cetak / Ekspor (Tampilan Saja untuk saat ini) -->
         <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1 ml-2">
             <i class="fa-solid fa-file-excel"></i> CSV
         </button>
     </form>
 </div>
 
-<!-- Tabel Laporan Rinci -->
+<!-- ========================================== -->
+<!-- KARTU RINGKASAN TOTAL PERIODE TERPILIH     -->
+<!-- ========================================== -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Card 1: Total Transaksi -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+            <i class="fa-solid fa-receipt text-xl"></i>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
+            <h3 class="text-xl font-bold text-gray-800">{{ "{:,.0f}".format(periode_total_trx).replace(',', '.') }} <span class="text-sm font-normal text-gray-400">struk</span></h3>
+        </div>
+    </div>
+
+    <!-- Card 2: Total DPP (Omzet) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+            <i class="fa-solid fa-chart-line text-xl"></i>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Omzet / DPP</p>
+            <h3 class="text-xl font-bold text-blue-700">Rp {{ "{:,.0f}".format(periode_total_dpp).replace(',', '.') }}</h3>
+        </div>
+    </div>
+
+    <!-- Card 3: Total PBJT (Pajak) -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+            <i class="fa-solid fa-building-columns text-xl"></i>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Pajak PBJT (10%)</p>
+            <h3 class="text-xl font-bold text-red-600">Rp {{ "{:,.0f}".format(periode_total_pbjt).replace(',', '.') }}</h3>
+        </div>
+    </div>
+
+    <!-- Card 4: Total Pendapatan Kotor -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
+        <div class="absolute right-0 top-0 h-full w-2 bg-teal-500"></div>
+        <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+            <i class="fa-solid fa-cash-register text-xl"></i>
+        </div>
+        <div>
+            <p class="text-sm font-medium text-gray-500">Total Pembayaran</p>
+            <h3 class="text-xl font-bold text-teal-700">Rp {{ "{:,.0f}".format(periode_total_bayar).replace(',', '.') }}</h3>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- TABEL RINCIAN TRANSAKSI (PAGINATED)        -->
+<!-- ========================================== -->
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
@@ -42,7 +93,7 @@
                 </tr>
             </thead>
             <tbody class="text-sm text-gray-700">
-                {% for trx in transaksi %}
+                {% for trx in transaksi.items %}
                 <tr class="hover:bg-teal-50 border-b border-gray-100 transition-colors">
                     <td class="py-3 px-6 whitespace-nowrap">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M') }}</td>
                     <td class="py-3 px-6 font-mono text-xs text-gray-500">{{ trx.no_struk }}</td>
@@ -50,7 +101,6 @@
                     <td class="py-3 px-6 text-right text-red-600 font-medium">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
                     <td class="py-3 px-6 text-right font-bold text-gray-900">Rp {{ "{:,.0f}".format(trx.total_dpp + trx.total_pbjt).replace(',', '.') }}</td>
                     <td class="py-3 px-6 text-center">
-                        <!-- Sisipkan URL API ke dalam fungsi JS -->
                         <button onclick="bukaModal('{{ url_for('wp_panel_bp.get_detail_api', id_trx=trx.id) }}')" class="text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded text-xs font-semibold transition">
                             <i class="fa-solid fa-eye"></i> Detail
                         </button>
@@ -65,25 +115,87 @@
                 </tr>
                 {% endfor %}
             </tbody>
-            <!-- Baris Total Kumulatif -->
-            {% if transaksi %}
-            <tfoot class="bg-gray-50 border-t-2 border-gray-200 text-gray-800 font-bold">
+            
+            <!-- Baris Subtotal Khusus Halaman Ini (Opsional tapi membantu kroscek data per page) -->
+            {% if transaksi.items %}
+            <tfoot class="bg-gray-50 border-t-2 border-gray-200 text-gray-600">
                 <tr>
-                    <td colspan="2" class="py-4 px-6 text-right uppercase text-xs tracking-wider">Total Periode Ini:</td>
-                    <td class="py-4 px-6 text-right text-blue-700">Rp {{ "{:,.0f}".format(total_dpp).replace(',', '.') }}</td>
-                    <td class="py-4 px-6 text-right text-red-600">Rp {{ "{:,.0f}".format(total_pbjt).replace(',', '.') }}</td>
-                    <td class="py-4 px-6 text-right text-teal-800 text-base">Rp {{ "{:,.0f}".format(total_dpp + total_pbjt).replace(',', '.') }}</td>
+                    <td colspan="2" class="py-3 px-6 text-right text-xs italic">Subtotal Halaman Ini:</td>
+                    <td class="py-3 px-6 text-right text-sm">Rp {{ "{:,.0f}".format(total_dpp_halaman).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right text-sm text-red-500">Rp {{ "{:,.0f}".format(total_pbjt_halaman).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right font-bold text-sm text-teal-800">Rp {{ "{:,.0f}".format(total_dpp_halaman + total_pbjt_halaman).replace(',', '.') }}</td>
                     <td></td>
                 </tr>
             </tfoot>
             {% endif %}
         </table>
-        
     </div>
+    
+    <!-- PAGINATION KONTROL -->
+    {% if transaksi.pages > 1 %}
+    <div class="flex items-center justify-between px-6 py-3 border-t border-gray-200 bg-white">
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm text-gray-700">
+                    Menampilkan 
+                    <span class="font-medium">{{ (transaksi.page - 1) * transaksi.per_page + 1 }}</span>
+                    hingga 
+                    <span class="font-medium">{{ (transaksi.page * transaksi.per_page) if (transaksi.page * transaksi.per_page) < transaksi.total else transaksi.total }}</span>
+                    dari 
+                    <span class="font-medium">{{ transaksi.total }}</span> transaksi
+                </p>
+            </div>
+            <div>
+                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    {% if transaksi.has_prev %}
+                        <a href="{{ url_for('wp_panel_bp.laporan_penjualan', page=transaksi.prev_num, start_date=start_date, end_date=end_date) }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
+                            <span class="sr-only">Previous</span>
+                            <i class="fa-solid fa-chevron-left h-4 w-4 flex justify-center items-center"></i>
+                        </a>
+                    {% else %}
+                        <button disabled class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-300 cursor-not-allowed">
+                            <i class="fa-solid fa-chevron-left h-4 w-4 flex justify-center items-center"></i>
+                        </button>
+                    {% endif %}
+
+                    {% for page_num in transaksi.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == transaksi.page %}
+                                <span class="relative inline-flex items-center px-4 py-2 border border-teal-500 bg-teal-50 text-sm font-bold text-teal-600 z-10">
+                                    {{ page_num }}
+                                </span>
+                            {% else %}
+                                <a href="{{ url_for('wp_panel_bp.laporan_penjualan', page=page_num, start_date=start_date, end_date=end_date) }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                                    {{ page_num }}
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-gray-50 text-sm font-medium text-gray-500">
+                                &hellip;
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if transaksi.has_next %}
+                        <a href="{{ url_for('wp_panel_bp.laporan_penjualan', page=transaksi.next_num, start_date=start_date, end_date=end_date) }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors">
+                            <span class="sr-only">Next</span>
+                            <i class="fa-solid fa-chevron-right h-4 w-4 flex justify-center items-center"></i>
+                        </a>
+                    {% else %}
+                        <button disabled class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-50 text-sm font-medium text-gray-300 cursor-not-allowed">
+                            <i class="fa-solid fa-chevron-right h-4 w-4 flex justify-center items-center"></i>
+                        </button>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ========================================== -->
 <!-- MODAL DETAIL TRANSAKSI                     -->
+<!-- (Biarkan kode JavaScript & Modal sama persis seperti sebelumnya) -->
 <!-- ========================================== -->
 <div id="detailModal" class="fixed inset-0 z-50 hidden bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300" id="modalContent">
@@ -117,12 +229,12 @@
                         </tr>
                     </thead>
                     <tbody id="modal-items" class="text-gray-700">
-                        <!-- Data item akan disuntikkan ke sini via JavaScript -->
+                        <!-- Data disuntikkan via JS -->
                     </tbody>
                 </table>
             </div>
 
-            <!-- Modal Footer (Total) -->
+            <!-- Modal Footer -->
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
                 <div class="flex justify-between text-gray-600 text-sm mb-1">
                     <span>Subtotal (DPP)</span>
@@ -152,7 +264,6 @@
     const modalData = document.getElementById('modal-data');
 
     async function bukaModal(apiUrl) {
-        // 1. Tampilkan modal dalam status loading
         modal.classList.remove('hidden');
         setTimeout(() => {
             modal.classList.remove('opacity-0');
@@ -163,20 +274,18 @@
         modalData.classList.add('hidden');
 
         try {
-            // 2. Tarik data dari backend secara async
             const response = await fetch(apiUrl);
             const data = await response.json();
             const dpp = parseFloat(data.total_dpp) || 0;
             const pbjt = parseFloat(data.total_pbjt) || 0;
 
-            // 3. Suntikkan data ke elemen HTML
             document.getElementById('modal-struk').innerText = `${data.no_struk} • ${data.waktu}`;
             document.getElementById('modal-dpp').innerText = formatRupiahModal(data.total_dpp);
             document.getElementById('modal-pbjt').innerText = formatRupiahModal(data.total_pbjt);
             document.getElementById('modal-grandtotal').innerText = formatRupiahModal(dpp + pbjt);
 
             const tbody = document.getElementById('modal-items');
-            tbody.innerHTML = ''; // Kosongkan data lama
+            tbody.innerHTML = ''; 
 
             if (data.items && data.items.length > 0) {
                 data.items.forEach(item => {
@@ -195,7 +304,6 @@
                 tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-xs text-gray-400 italic">Detail pesanan tidak tersedia/belum disimpan.</td></tr>`;
             }
 
-            // 4. Sembunyikan loading, tampilkan data
             modalLoading.classList.add('hidden');
             modalData.classList.remove('hidden');
 
@@ -211,10 +319,9 @@
         modalContent.classList.add('scale-95');
         setTimeout(() => {
             modal.classList.add('hidden');
-        }, 300); // Sesuaikan dengan durasi animasi tailwind
+        }, 300); 
     }
 
-    // Tutup jika klik area gelap di luar modal
     window.onclick = function(event) {
         if (event.target == modal) {
             tutupModal();

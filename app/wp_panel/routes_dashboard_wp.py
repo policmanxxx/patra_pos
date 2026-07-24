@@ -1,12 +1,12 @@
 # app/wp_panel/routes.py
-from flask import Blueprint, render_template, redirect, url_for,request
+from flask import Blueprint, render_template, redirect, url_for, request
 from . import wp_panel_bp 
 from flask_login import login_required, current_user
 from app.extensions import db
 from app.models import Transaksi, Menu, WajibPajak
 from sqlalchemy import func
 from datetime import datetime, date
-
+import json
 
 @wp_panel_bp.route('/panel')
 @login_required
@@ -21,16 +21,12 @@ def index():
 
     # --- LOGIKA FILTER TANGGAL ---
     hari_ini = date.today()
-    # Default: Tanggal 1 bulan ini
     default_start = hari_ini.replace(day=1).strftime('%Y-%m-%d')
-    # Default: Hari ini
     default_end = hari_ini.strftime('%Y-%m-%d')
 
-    # Tangkap request dari URL (misal: ?start_date=2026-06-01)
     start_date_str = request.args.get('start_date', default_start)
     end_date_str = request.args.get('end_date', default_end)
 
-    # Konversi string ke format datetime agar query akurat (mencakup jam 23:59:59 di hari terakhir)
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
 
@@ -53,11 +49,32 @@ def index():
         .filter(Transaksi.waktu_transaksi >= start_date)\
         .filter(Transaksi.waktu_transaksi <= end_date).count()
 
-    # 4. Transaksi Terakhir (Sesuai rentang tanggal)
+    # 4. Transaksi Terakhir (Limit 7 untuk tabel)
     recent_trx = Transaksi.query.filter_by(wp_id=wp_id_string)\
         .filter(Transaksi.waktu_transaksi >= start_date)\
         .filter(Transaksi.waktu_transaksi <= end_date)\
-        .order_by(Transaksi.waktu_transaksi.desc()).limit(10).all()
+        .order_by(Transaksi.waktu_transaksi.desc()).limit(7).all()
+
+    # 5. [IMPROVISASI] Peringatan Stok Cepat
+    stok_menipis = Menu.query.filter(
+        Menu.wp_id == wp_id_string, 
+        Menu.is_track_stock == True, 
+        Menu.stok <= Menu.batas_stok_minimum,
+        Menu.is_active == True
+    ).limit(4).all()
+
+    # 6. [IMPROVISASI] Data Grafik Mini
+    grafik_query = db.session.query(
+        func.date(Transaksi.waktu_transaksi).label('tanggal'),
+        func.sum(Transaksi.total_dpp).label('omzet')
+    ).filter(
+        Transaksi.wp_id == wp_id_string,
+        Transaksi.waktu_transaksi >= start_date, 
+        Transaksi.waktu_transaksi <= end_date
+    ).group_by(func.date(Transaksi.waktu_transaksi)).order_by('tanggal').all()
+
+    label_grafik = [g.tanggal.strftime('%d %b') for g in grafik_query]
+    data_grafik = [float(g.omzet) for g in grafik_query]
 
     return render_template(
         'wp_panel/dashboard.html', 
@@ -67,5 +84,8 @@ def index():
         total_trx=total_trx,
         recent_trx=recent_trx,
         start_date=start_date_str,
-        end_date=end_date_str
+        end_date=end_date_str,
+        stok_menipis=stok_menipis,
+        label_grafik=json.dumps(label_grafik),
+        data_grafik=json.dumps(data_grafik)
     )
