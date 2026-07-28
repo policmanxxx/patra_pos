@@ -6,114 +6,163 @@
     <title>BPKPD - {% block title %}Panel Admin{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Area untuk memuat CSS tambahan dari template anak (seperti DataTables) -->
+    
+    <!-- Animasi CSS kustom ringan -->
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-slate-50 flex h-screen overflow-hidden font-sans text-gray-800">
 
+    <!-- OVERLAY UNTUK MOBILE SIDEBAR -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden md:hidden transition-opacity"></div>
+
     <!-- SIDEBAR -->
-    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20 transition-all duration-300">
+    <!-- Tambahan: -translate-x-full untuk hide di mobile, md:translate-x-0 untuk show di desktop -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 w-64 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-30 transition-transform duration-300 ease-in-out">
         
-        <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
-            <i class="fa-solid fa-building-columns text-blue-500 text-xl mr-3"></i>
-            <span class="text-white font-bold text-lg tracking-wider">MOJOPOS</span>
+       <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
+            <!-- Menggunakan tag img dan memanggil gambar dari folder static -->
+            <img src="{{ url_for('static', filename='logos/logos.png') }}" alt="Logo PATRA-MOJO" class="h-8 w-8 object-contain mr-3">
+            
+            <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-teal-400 text-lg tracking-wider">PATRA-MOJO</span>
+            
+            <!-- Tombol close sidebar khusus mobile -->
+            <button id="closeSidebar" class="md:hidden ml-auto text-gray-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
         </div>
 
-        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1 custom-scrollbar">
             
             <!-- MENU UTAMA -->
             <div class="px-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Utama</div>
-            <a href="{{ url_for('admin_bp.index') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.index' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-chart-pie w-6 text-center"></i>
+            <a href="{{ url_for('admin_bp.index') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.index' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-chart-pie w-6 text-center text-blue-400"></i>
                 <span class="ml-3 font-medium">Dashboard</span>
             </a>
 
             <!-- MENU PENGAWASAN -->
             <div class="px-6 mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Pengawasan Pajak</div>
             
-            <a href="{{ url_for('admin_bp.monitoring_kepatuhan') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.monitoring_kepatuhan' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
+            <a href="{{ url_for('admin_bp.monitoring_kepatuhan') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.monitoring_kepatuhan' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
                 <i class="fa-solid fa-satellite-dish w-6 text-center text-green-400"></i>
                 <span class="ml-3 font-medium">Kepatuhan Sinkron</span>
             </a>
 
-            <a href="{{ url_for('admin_bp.riwayat_transaksi') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.riwayat_transaksi' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-receipt w-6 text-center"></i>
+            <a href="{{ url_for('admin_bp.riwayat_transaksi') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.riwayat_transaksi' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-receipt w-6 text-center text-orange-400"></i>
                 <span class="ml-3 font-medium">Riwayat Transaksi</span>
             </a>
 
-            <a href="{{ url_for('admin_bp.laporan_bulanan') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.laporan_bulanan' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-file-invoice-dollar w-6 text-center"></i>
+            <a href="{{ url_for('admin_bp.laporan_bulanan') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.laporan_bulanan' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-file-invoice-dollar w-6 text-center text-purple-400"></i>
                 <span class="ml-3 font-medium">Rekapitulasi Bulanan</span>
             </a>
+			<a href="{{ url_for('admin_bp.laporan_harian') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.laporan_harian' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-file-invoice-dollar w-6 text-center text-purple-400"></i>
+                <span class="ml-3 font-medium">Rekapitulasi Harian</span>
+            </a>
 
-            <!-- TAMBAHAN MENU BARU -->
-            <a href="{{ url_for('admin_bp.analisis_jam_sibuk') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.analisis_jam_sibuk' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-chart-line w-6 text-center text-blue-400"></i>
+            <a href="{{ url_for('admin_bp.analisis_jam_sibuk') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.analisis_jam_sibuk' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-chart-line w-6 text-center text-pink-400"></i>
                 <span class="ml-3 font-medium">Analisis Jam Sibuk</span>
             </a>
 
             <!-- MENU MASTER DATA -->
             <div class="px-6 mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Master Data</div>
             
-            <a href="{{ url_for('admin_bp.kelola_wp') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.kelola_wp' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-store w-6 text-center"></i>
+            <a href="{{ url_for('admin_bp.kelola_wp') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.kelola_wp' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-store w-6 text-center text-teal-400"></i>
                 <span class="ml-3 font-medium">Wajib Pajak</span>
             </a>
             
-            <a href="{{ url_for('admin_bp.kelola_menu') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.kelola_menu' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-utensils w-6 text-center"></i>
+            <a href="{{ url_for('admin_bp.kelola_menu') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.kelola_menu' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-utensils w-6 text-center text-yellow-400"></i>
                 <span class="ml-3 font-medium">Katalog Menu</span>
             </a>
 
             <!-- MENU PENGATURAN -->
             <div class="px-6 mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">Pengaturan</div>
             
-            <a href="{{ url_for('admin_bp.kelola_user') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.kelola_user' %}bg-slate-800 text-white border-blue-500{% else %}border-transparent hover:border-blue-500{% endif %}">
-                <i class="fa-solid fa-users-gear w-6 text-center"></i>
+            <a href="{{ url_for('admin_bp.kelola_user') }}" class="flex items-center px-6 py-3 hover:bg-slate-800 hover:text-white transition-colors border-l-4 {% if request.endpoint == 'admin_bp.kelola_user' %}bg-slate-800 text-white border-blue-500 shadow-inner{% else %}border-transparent hover:border-blue-500{% endif %}">
+                <i class="fa-solid fa-users-gear w-6 text-center text-gray-400"></i>
                 <span class="ml-3 font-medium">Manajemen User</span>
             </a>
-
         </nav>
-
-        <div class="p-4 border-t border-slate-800">
-            <a href="{{ url_for('auth_bp.logout') }}" class="flex items-center px-4 py-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-colors">
-                <i class="fa-solid fa-right-from-bracket w-6 text-center"></i>
-                <span class="ml-3 font-medium">Keluar Sistem</span>
-            </a>
+        
+        <!-- Info Versi Aplikasi -->
+        <div class="p-4 border-t border-slate-800 text-center text-xs text-slate-500">
+            Patra Mojo v1.0.0
         </div>
     </aside>
 
     <!-- KONTEN UTAMA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden">
         
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-10 border-b border-gray-200">
-            <div class="flex items-center">
-                <h2 class="text-xl font-bold text-gray-800">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 md:px-8 z-10 border-b border-gray-200">
+            <div class="flex items-center gap-4">
+                <!-- Tombol Hamburger Menu (Mobile) -->
+                <button id="openSidebar" class="md:hidden text-gray-600 hover:text-blue-600 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <h2 class="text-lg md:text-xl font-bold text-gray-800 truncate">
                     {% block page_header %}Dashboard Utama{% endblock %}
                 </h2>
             </div>
             
             <div class="flex items-center space-x-4">
-                <div class="text-right hidden md:block">
-                    <p class="text-sm font-bold text-gray-800 leading-tight">
-                        {{ current_user.nama_lengkap if current_user.is_authenticated else 'Administrator' }}
-                    </p>
-                    <p class="text-xs text-gray-500">Pusat Data</p>
+                
+                <!-- DROPDOWN USER (SUDAH DIPINDAH KESINI) -->
+                <div class="relative">
+                    <button id="userMenuBtn" class="flex items-center gap-3 focus:outline-none hover:bg-gray-50 p-1 md:pr-2 rounded-full transition-all">
+                        <div class="text-right hidden md:block">
+                            <p class="text-sm font-bold text-gray-800 leading-tight">
+                                {{ current_user.nama_lengkap if current_user.is_authenticated else 'Administrator' }}
+                            </p>
+                            <p class="text-xs text-gray-500">Pusat Data</p>
+                        </div>
+                        <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 border-2 border-blue-200 flex items-center justify-center font-bold shadow-sm transition-transform hover:scale-105">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-gray-400 text-xs hidden md:block"></i>
+                    </button>
+
+                    <!-- Isi Dropdown -->
+                    <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-100 z-50 transform origin-top-right transition-all">
+                        <div class="px-4 py-2 border-b border-gray-50 md:hidden">
+                            <p class="text-sm font-bold text-gray-800">{{ current_user.nama_lengkap if current_user.is_authenticated else 'Administrator' }}</p>
+                            <p class="text-xs text-gray-500">Pusat Data</p>
+                        </div>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                            <i class="fa-solid fa-id-badge w-5"></i> Profil Saya
+                        </a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                            <i class="fa-solid fa-gear w-5"></i> Pengaturan
+                        </a>
+                        <div class="border-t border-gray-100 my-1"></div>
+                        <a href="{{ url_for('auth_bp.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <i class="fa-solid fa-right-from-bracket w-5"></i> Keluar Sistem
+                        </a>
+                    </div>
                 </div>
-                <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 border border-blue-200 flex items-center justify-center font-bold shadow-inner">
-                    <i class="fa-solid fa-user-shield"></i>
-                </div>
+
             </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-8">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50/50 p-4 md:p-8 custom-scrollbar fade-in">
             
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
-                        <div class="mb-6 px-4 py-3 rounded border {% if category == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-green-100 border-green-400 text-green-700{% endif %} flex items-center shadow-sm">
+                        <div class="mb-6 px-4 py-3 rounded-lg border {% if category == 'error' %}bg-red-50 border-red-200 text-red-700{% else %}bg-green-50 border-green-200 text-green-700{% endif %} flex items-center shadow-sm">
                             <i class="fa-solid {% if category == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %} mr-3 text-lg"></i>
                             <span class="font-medium">{{ message }}</span>
+                            <button onclick="this.parentElement.style.display='none'" class="ml-auto text-gray-400 hover:text-gray-600">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
                     {% endfor %}
                 {% endif %}
@@ -124,9 +173,45 @@
         </main>
     </div>
 
-    <!-- Area untuk memuat script JavaScript (misal: DataTables, jQuery) -->
+    <!-- Area untuk memuat script JavaScript -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    
+    <!-- Script Inti Layout -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Logika Dropdown User
+            const userMenuBtn = document.getElementById('userMenuBtn');
+            const userDropdown = document.getElementById('userDropdown');
+
+            userMenuBtn.addEventListener('click', () => {
+                userDropdown.classList.toggle('hidden');
+            });
+
+            // Tutup dropdown jika klik di luar area
+            window.addEventListener('click', (e) => {
+                if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                    userDropdown.classList.add('hidden');
+                }
+            });
+
+            // Logika Mobile Sidebar
+            const openSidebar = document.getElementById('openSidebar');
+            const closeSidebar = document.getElementById('closeSidebar');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+            }
+
+            openSidebar.addEventListener('click', toggleSidebar);
+            closeSidebar.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
+
     {% block scripts %}{% endblock %}
 
 </body>

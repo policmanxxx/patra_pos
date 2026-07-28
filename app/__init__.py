@@ -5,7 +5,7 @@ import os
 
 def create_app():
     app = Flask(__name__)
-    
+    app.jinja_env.globals.update(min=min)
     # Ambil dari environment variable
     database_url = os.getenv('DATABASE_URL')
     secret_key = os.getenv('SECRET_KEY')

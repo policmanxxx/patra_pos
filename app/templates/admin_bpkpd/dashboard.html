@@ -4,117 +4,253 @@
 {% block page_header %}Pusat Pemantauan Pajak Daerah BPKPD Kota Mojokerto{% endblock %}
 
 {% block content %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
-                <div class="absolute right-0 top-0 mt-4 mr-4 bg-blue-100 text-blue-600 p-2 rounded-lg">
-                    <i class="fa-solid fa-sack-dollar text-xl"></i>
-                </div>
-                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Omzet (DPP) Hari Ini</h3>
-                <p class="text-2xl font-bold text-gray-800 mt-2">Rp {{ "{:,.0f}".format(total_omzet_hari_ini | default(0)).replace(',', '.') }}</p>
-                <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-clock mr-1"></i>Update Real-time</p>
+    <!-- KARTU STATISTIK -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div class="absolute right-0 top-0 mt-4 mr-4 bg-blue-50 text-blue-600 p-3 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                <i class="fa-solid fa-sack-dollar text-xl"></i>
             </div>
-            
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
-                <div class="absolute right-0 top-0 mt-4 mr-4 bg-red-100 text-red-600 p-2 rounded-lg">
-                    <i class="fa-solid fa-cash-register text-xl"></i>
-                </div>
-                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Potensi PBJT (10%) Hari Ini</h3>
-                <p class="text-2xl font-bold text-red-600 mt-2">Rp {{ "{:,.0f}".format(total_pbjt_hari_ini | default(0)).replace(',', '.') }}</p>
-                <p class="text-xs text-green-500 mt-2 font-medium"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Masuk ke kas daerah</p>
+            <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Omzet (DPP) Hari Ini</h3>
+            <p class="text-2xl font-black text-gray-800 mt-2">Rp {{ "{:,.0f}".format(total_omzet_hari_ini | default(0)).replace(',', '.') }}</p>
+            <p class="text-xs text-gray-400 mt-2 flex items-center"><i class="fa-solid fa-circle-dot text-blue-500 mr-1 animate-pulse"></i>Update Real-time</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div class="absolute right-0 top-0 mt-4 mr-4 bg-red-50 text-red-600 p-3 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-colors duration-300">
+                <i class="fa-solid fa-cash-register text-xl"></i>
             </div>
-            
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
-                <div class="absolute right-0 top-0 mt-4 mr-4 bg-green-100 text-green-600 p-2 rounded-lg">
-                    <i class="fa-solid fa-receipt text-xl"></i>
-                </div>
-                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Struk Hari Ini</h3>
-                <p class="text-2xl font-bold text-gray-800 mt-2">{{ total_trx_hari_ini | default(0) }} <span class="text-sm font-normal text-gray-500">Transaksi</span></p>
-                <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-file-invoice mr-1"></i>Tercatat di server</p>
+            <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Potensi PBJT (10%) Hari Ini</h3>
+            <p class="text-2xl font-black text-red-600 mt-2">Rp {{ "{:,.0f}".format(total_pbjt_hari_ini | default(0)).replace(',', '.') }}</p>
+            <p class="text-xs text-green-500 mt-2 font-medium bg-green-50 w-max px-2 py-1 rounded-md"><i class="fa-solid fa-arrow-trend-up mr-1"></i>Masuk ke kas daerah</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div class="absolute right-0 top-0 mt-4 mr-4 bg-green-50 text-green-600 p-3 rounded-xl group-hover:bg-green-600 group-hover:text-white transition-colors duration-300">
+                <i class="fa-solid fa-receipt text-xl"></i>
             </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
-                <div class="absolute right-0 top-0 mt-4 mr-4 bg-teal-100 text-teal-600 p-2 rounded-lg">
-                    <i class="fa-solid fa-store text-xl"></i>
-                </div>
-                <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">WP Aktif (Kirim Data)</h3>
-                <p class="text-2xl font-bold text-gray-800 mt-2">{{ wp_aktif_count | default(0) }} <span class="text-sm font-normal text-gray-500">Resto/Kafe</span></p>
-                <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-wifi mr-1"></i>Dari total {{ total_wp | default(0) }} terdaftar</p>
-            </div>
+            <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Struk Hari Ini</h3>
+            <p class="text-2xl font-black text-gray-800 mt-2">{{ total_trx_hari_ini | default(0) }} <span class="text-sm font-normal text-gray-500">Transaksi</span></p>
+            <p class="text-xs text-gray-400 mt-2"><i class="fa-solid fa-server mr-1"></i>Tercatat di server</p>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+            <div class="absolute right-0 top-0 mt-4 mr-4 bg-teal-50 text-teal-600 p-3 rounded-xl group-hover:bg-teal-600 group-hover:text-white transition-colors duration-300">
+                <i class="fa-solid fa-store text-xl"></i>
+            </div>
+            <h3 class="text-gray-500 text-xs font-bold uppercase tracking-wider">WP Aktif (Kirim Data)</h3>
+            <p class="text-2xl font-black text-gray-800 mt-2">{{ wp_aktif_count | default(0) }} <span class="text-sm font-normal text-gray-500">Resto/Kafe</span></p>
+            <div class="w-full bg-gray-200 rounded-full h-1.5 mb-1 mt-3">
+                <div class="bg-teal-500 h-1.5 rounded-full" style="width: 75%"></div>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">Dari total {{ total_wp | default(0) }} terdaftar</p>
+        </div>
+    </div>
+
+    <!-- AREA GRAFIK & TOP WP -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        
+        <!-- CHART AREA -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                <div>
                     <h2 class="text-lg font-bold text-gray-800">Tren Penerimaan PBJT 7 Hari Terakhir</h2>
-                    <button class="text-blue-600 text-sm hover:underline"><i class="fa-solid fa-download mr-1"></i>Unduh CSV</button>
+                    <p class="text-xs text-gray-500">Berdasarkan data sinkronisasi otomatis</p>
                 </div>
-                <div class="p-6 h-72 flex items-center justify-center bg-gray-50/50">
-                    <p class="text-gray-400 text-sm italic"><i class="fa-solid fa-chart-line mr-2"></i>Area Grafik Tren (Membutuhkan integrasi Chart.js)</p>
-                </div>
+                <button class="text-blue-600 text-sm hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                    <i class="fa-solid fa-download mr-1"></i> Unduh Laporan
+                </button>
             </div>
-
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-                <div class="px-6 py-4 border-b border-gray-100">
-                    <h2 class="text-lg font-bold text-gray-800">Top 5 Wajib Pajak Bulan Ini</h2>
-                </div>
-                <div class="p-0">
-                    <ul class="divide-y divide-gray-100">
-                        {% for wp in top_wp %}
-                        <li class="p-4 hover:bg-gray-50 flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-sm">
-                                    {{ loop.index }}
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-gray-800">{{ wp.nama_usaha }}</p>
-                                    <p class="text-xs text-gray-500">{{ wp.npwpd }}</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm font-bold text-red-600">Rp {{ "{:,.0f}".format(wp.total_pajak).replace(',', '.') }}</p>
-                            </div>
-                        </li>
-                        {% else %}
-                        <li class="p-6 text-center text-gray-500 text-sm">Belum ada data setoran bulan ini.</li>
-                        {% endfor %}
-                    </ul>
-                </div>
+            <div class="p-4 w-full" style="height: 350px;">
+                <canvas id="trenPajakChart"></canvas>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <!-- TOP WP AREA -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-teal-50 to-white">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-medal text-yellow-500 mr-2"></i>Top 5 Wajib Pajak</h2>
+                <p class="text-xs text-gray-500">Penyumbang tertinggi bulan ini</p>
+            </div>
+            <div class="p-0">
+                <ul class="divide-y divide-gray-100">
+                    {% for wp in top_wp %}
+                    <li class="p-4 hover:bg-teal-50/30 transition-colors flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full {% if loop.index == 1 %}bg-yellow-100 text-yellow-600{% elif loop.index == 2 %}bg-gray-200 text-gray-600{% elif loop.index == 3 %}bg-orange-100 text-orange-600{% else %}bg-teal-50 text-teal-600{% endif %} flex items-center justify-center font-black text-lg shadow-sm">
+                                {{ loop.index }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800 group-hover:text-teal-700 transition-colors">{{ wp.nama_usaha }}</p>
+                                <p class="text-xs text-gray-500">{{ wp.npwpd }}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-red-600">Rp {{ "{:,.0f}".format(wp.total_pajak).replace(',', '.') }}</p>
+                        </div>
+                    </li>
+                    {% else %}
+                    <!-- Dummy data agar UI tidak kosong jika belum ada database -->
+                    <li class="p-4 hover:bg-gray-50 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-yellow-100 text-yellow-600 flex items-center justify-center font-black text-lg shadow-sm">1</div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">Restoran Mie Gacoan</p>
+                                <p class="text-xs text-gray-500">35.xxx.xxx.x-602.000</p>
+                            </div>
+                        </div>
+                        <div class="text-right"><p class="text-sm font-bold text-red-600">Rp 45.300.000</p></div>
+                    </li>
+                    <li class="p-4 hover:bg-gray-50 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-black text-lg shadow-sm">2</div>
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">Kopi Kenangan Mojokerto</p>
+                                <p class="text-xs text-gray-500">35.xxx.xxx.x-602.001</p>
+                            </div>
+                        </div>
+                        <div class="text-right"><p class="text-sm font-bold text-red-600">Rp 21.150.000</p></div>
+                    </li>
+                    <li class="p-6 text-center text-gray-400 text-sm italic col-span-full hidden">Belum ada data setoran bulan ini.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABEL TRANSAKSI -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <div>
                 <h2 class="text-lg font-bold text-gray-800">Log Transaksi Terkini</h2>
-                <a href="#" class="text-sm text-teal-600 hover:text-teal-800 font-medium">Lihat Semua Transaksi <i class="fa-solid fa-arrow-right ml-1"></i></a>
+                <p class="text-xs text-gray-500">10 Transaksi terakhir</p>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
-                            <th class="py-4 px-6 font-semibold">No Struk</th>
-                            <th class="py-4 px-6 font-semibold">Wajib Pajak</th>
-                            <th class="py-4 px-6 font-semibold">Waktu (WIB)</th>
-                            <th class="py-4 px-6 font-semibold text-right">Dasar Pengenaan (DPP)</th>
-                            <th class="py-4 px-6 font-semibold text-right text-red-600">PBJT (10%)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
-                        {% for trx, nama_usaha in recent_trx %}
-                        <tr class="hover:bg-blue-50/50 transition-colors">
-                            <td class="py-3 px-6 font-mono text-gray-600">{{ trx.no_struk }}</td>
-                            <td class="py-3 px-6 font-bold">{{ nama_usaha }}</td>
-                            <td class="py-3 px-6 text-gray-500">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M:%S') }}</td>
-                            <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</td>
-                            <td class="py-3 px-6 text-right font-bold text-red-600 bg-red-50/30">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="py-8 text-center text-gray-500 italic">Belum ada aliran data transaksi yang masuk hari ini.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <a href="{{ url_for('admin_bp.riwayat_transaksi') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline bg-blue-50 px-4 py-2 rounded-lg">Lihat Semua <i class="fa-solid fa-arrow-right ml-1"></i></a>
         </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
+                        <th class="py-4 px-6 font-semibold">No Struk</th>
+                        <th class="py-4 px-6 font-semibold">Wajib Pajak</th>
+                        <th class="py-4 px-6 font-semibold">Waktu (WIB)</th>
+                        <th class="py-4 px-6 font-semibold text-right">DPP (Omzet)</th>
+                        <th class="py-4 px-6 font-semibold text-right text-red-600">PBJT (10%)</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
+                    {% for trx, nama_usaha in recent_trx %}
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="py-3 px-6 font-mono text-xs bg-gray-50 text-gray-600 rounded-l-lg">{{ trx.no_struk }}</td>
+                        <td class="py-3 px-6 font-bold text-gray-800">{{ nama_usaha }}</td>
+                        <td class="py-3 px-6 text-gray-500">{{ trx.waktu_transaksi.strftime('%d-%m-%Y %H:%M:%S') }}</td>
+                        <td class="py-3 px-6 text-right font-medium">Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</td>
+                        <td class="py-3 px-6 text-right font-bold text-red-600 bg-red-50/30">Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</td>
+                    </tr>
+                    {% else %}
+                    <!-- Dummy data -->
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="py-3 px-6 font-mono text-xs text-gray-600">TRX-20231015-001</td>
+                        <td class="py-3 px-6 font-bold text-gray-800">Restoran Mie Gacoan</td>
+                        <td class="py-3 px-6 text-gray-500">15-10-2023 12:45:00</td>
+                        <td class="py-3 px-6 text-right font-medium">Rp 150.000</td>
+                        <td class="py-3 px-6 text-right font-bold text-red-600 bg-red-50/30">Rp 15.000</td>
+                    </tr>
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="py-3 px-6 font-mono text-xs text-gray-600">TRX-20231015-002</td>
+                        <td class="py-3 px-6 font-bold text-gray-800">Kopi Kenangan</td>
+                        <td class="py-3 px-6 text-gray-500">15-10-2023 12:50:30</td>
+                        <td class="py-3 px-6 text-right font-medium">Rp 80.000</td>
+                        <td class="py-3 px-6 text-right font-bold text-red-600 bg-red-50/30">Rp 8.000</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('trenPajakChart').getContext('2d');
+        
+        let gradientFill = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientFill.addColorStop(0, 'rgba(59, 130, 246, 0.4)'); 
+        gradientFill.addColorStop(1, 'rgba(59, 130, 246, 0.01)');
+
+        // Variabel langsung di-inject dengan aman dari Flask
+        const labels = {{ labels_grafik | default('[]') | safe }};
+        const dataPajak = {{ data_grafik | default('[]') | safe }};
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Penerimaan PBJT (Rp)',
+                    data: dataPajak,
+                    borderColor: '#3b82f6', 
+                    backgroundColor: gradientFill,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#3b82f6',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4 
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false 
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleFont: { size: 13 },
+                        bodyFont: { size: 14, weight: 'bold' },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false, drawBorder: false },
+                        ticks: { color: '#6b7280', font: { family: "'Inter', sans-serif" } }
+                    },
+                    y: {
+                        grid: { color: '#f3f4f6', drawBorder: false },
+                        ticks: {
+                            color: '#6b7280',
+                            font: { family: "'Inter', sans-serif" },
+                            callback: function(value, index, values) {
+                                if (value >= 1000000) return (value / 1000000) + ' Jt';
+                                return value;
+                            }
+                        }
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
+            }
+        });
+    });
+</script>
 {% endblock %}

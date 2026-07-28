@@ -6,57 +6,58 @@
 {% block content %}
 <!-- SUMMARY CARDS -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center">
-        <div class="p-3 bg-blue-50 text-blue-600 rounded-lg mr-4">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow duration-300">
+        <div class="p-4 bg-blue-50 text-blue-600 rounded-xl mr-4">
             <i class="fa-solid fa-receipt text-2xl"></i>
         </div>
         <div>
             <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Total Transaksi</p>
-            <p class="text-2xl font-bold text-gray-800">{{ summary_count }} <span class="text-sm font-normal text-gray-500">Struk</span></p>
+            <p class="text-2xl font-black text-gray-800">{{ summary_count }} <span class="text-sm font-normal text-gray-500">Struk</span></p>
         </div>
     </div>
     
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center">
-        <div class="p-3 bg-gray-50 text-gray-600 rounded-lg mr-4">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow duration-300">
+        <div class="p-4 bg-gray-50 text-gray-600 rounded-xl mr-4">
             <i class="fa-solid fa-sack-dollar text-2xl"></i>
         </div>
         <div>
             <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Total Omzet (DPP)</p>
-            <p class="text-2xl font-bold text-gray-800">Rp {{ "{:,.0f}".format(summary_dpp | default(0)).replace(',', '.') }}</p>
+            <p class="text-2xl font-black text-gray-800">Rp {{ "{:,.0f}".format(summary_dpp | default(0)).replace(',', '.') }}</p>
         </div>
     </div>
 
-    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center">
-        <div class="p-3 bg-red-50 text-red-600 rounded-lg mr-4">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center hover:shadow-md transition-shadow duration-300">
+        <div class="p-4 bg-red-50 text-red-600 rounded-xl mr-4">
             <i class="fa-solid fa-cash-register text-2xl"></i>
         </div>
         <div>
             <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider">Total Pajak (PBJT 10%)</p>
-            <p class="text-2xl font-bold text-red-600">Rp {{ "{:,.0f}".format(summary_pbjt | default(0)).replace(',', '.') }}</p>
+            <p class="text-2xl font-black text-red-600">Rp {{ "{:,.0f}".format(summary_pbjt | default(0)).replace(',', '.') }}</p>
         </div>
     </div>
 </div>
 
 <!-- FILTER BAR -->
-<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6">
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6 relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
     <form method="GET" action="{{ url_for('admin_bp.riwayat_transaksi') }}" class="flex flex-col md:flex-row gap-4 items-end">
         
         <!-- Rentang Waktu -->
         <div class="w-full md:w-auto flex-1">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">Rentang Waktu</label>
+            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Rentang Waktu</label>
             <div class="flex items-center space-x-2">
                 <input type="date" name="start_date" value="{{ current_start_date }}" required
-                       class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                <span class="text-gray-400">s.d</span>
+                       class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2">
+                <span class="text-gray-400 font-medium">s.d</span>
                 <input type="date" name="end_date" value="{{ current_end_date }}" required
-                       class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                       class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2">
             </div>
         </div>
 
         <!-- Filter Wajib Pajak -->
         <div class="w-full md:w-1/4">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">Wajib Pajak</label>
-            <select name="wp_id" class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">Wajib Pajak</label>
+            <select name="wp_id" class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2">
                 <option value="all">Semua Wajib Pajak</option>
                 {% for wp in daftar_wp %}
                     <option value="{{ wp.id }}" {% if current_wp_id == wp.id|string %}selected{% endif %}>
@@ -68,17 +69,17 @@
 
         <!-- Pencarian Nomor Struk -->
         <div class="w-full md:w-1/5">
-            <label class="block text-xs font-semibold text-gray-600 mb-1 uppercase">No. Struk</label>
+            <label class="block text-xs font-bold text-gray-600 mb-2 uppercase tracking-wide">No. Struk</label>
             <input type="text" name="no_struk" value="{{ current_no_struk or '' }}" placeholder="Cari struk..."
-                   class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                   class="w-full text-sm border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2">
         </div>
 
         <!-- Tombol Aksi -->
         <div class="flex gap-2 w-full md:w-auto">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm w-full md:w-auto">
-                <i class="fa-solid fa-filter mr-1"></i> Terapkan
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm w-full md:w-auto flex items-center justify-center">
+                <i class="fa-solid fa-filter mr-2"></i> Terapkan
             </button>
-            <a href="{{ url_for('admin_bp.riwayat_transaksi') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm text-center w-full md:w-auto" title="Reset Filter">
+            <a href="{{ url_for('admin_bp.riwayat_transaksi') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition-colors shadow-sm text-center w-full md:w-auto flex items-center justify-center" title="Reset Filter">
                 <i class="fa-solid fa-rotate-right"></i>
             </a>
         </div>
@@ -86,12 +87,14 @@
 </div>
 
 <!-- DATA TABEL -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-        <h2 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-list mr-2"></i>Daftar Transaksi ({{ summary_count }})</h2>
-        <button class="text-teal-600 hover:text-teal-800 text-sm font-medium">
-            <i class="fa-solid fa-file-excel mr-1"></i> Ekspor Data
-        </button>
+<div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+    <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <h2 class="text-sm font-bold text-gray-800"><i class="fa-solid fa-list mr-2"></i>Daftar Transaksi</h2>
+        
+        <!-- Tombol Ekspor (Disiapkan bentuk form GET jika nanti ada fitur export_excel=True) -->
+        <a href="#" onclick="alert('Fitur ekspor akan mengunduh format Excel (Dalam Pengembangan)')" class="text-teal-600 hover:text-teal-800 hover:bg-teal-50 px-3 py-1.5 rounded-md transition-colors text-sm font-bold flex items-center">
+            <i class="fa-solid fa-file-excel mr-2"></i> Ekspor Data
+        </a>
     </div>
     
     <div class="overflow-x-auto">
@@ -99,7 +102,7 @@
             <thead>
                 <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
                     <th class="py-4 px-6 font-semibold w-16">No</th>
-                    <th class="py-4 px-6 font-semibold">Struk & Waktu</th>
+                    <th class="py-4 px-6 font-semibold">Struk & Waktu (WIB)</th>
                     <th class="py-4 px-6 font-semibold">Wajib Pajak</th>
                     <th class="py-4 px-6 font-semibold text-right">DPP (Omzet)</th>
                     <th class="py-4 px-6 font-semibold text-right text-red-600">PBJT (10%)</th>
@@ -107,63 +110,87 @@
                 </tr>
             </thead>
             <tbody class="text-sm text-gray-700 divide-y divide-gray-100">
-                {% for item in transaksi_list %}
-                <tr class="hover:bg-blue-50/50 transition-colors">
-                    <td class="py-3 px-6 text-gray-500">{{ loop.index }}</td>
+                <!-- Iterasi menggunakan objek paginasi (.items) -->
+                {% for item in transaksi_paginated.items %}
+                <tr class="hover:bg-blue-50/30 transition-colors">
+                    <!-- Menghitung nomor urut agar nyambung ke halaman berikutnya -->
+                    <td class="py-3 px-6 text-gray-500">{{ (transaksi_paginated.page - 1) * transaksi_paginated.per_page + loop.index }}</td>
                     <td class="py-3 px-6">
-                        <div class="font-mono text-gray-800 font-bold">{{ item.Transaksi.no_struk }}</div>
-                        <div class="text-xs text-gray-500 mt-1"><i class="fa-regular fa-clock mr-1"></i>{{ item.Transaksi.waktu_transaksi.strftime('%d-%m-%Y %H:%M:%S') }}</div>
+                        <div class="font-mono text-gray-800 font-bold bg-gray-100 rounded px-2 py-0.5 inline-block text-xs">{{ item.Transaksi.no_struk }}</div>
+                        <div class="text-xs text-gray-500 mt-1.5"><i class="fa-regular fa-clock mr-1"></i>{{ item.Transaksi.waktu_transaksi.strftime('%d-%m-%Y %H:%M:%S') }}</div>
                     </td>
-                    <td class="py-3 px-6 font-medium text-gray-800">{{ item.nama_usaha }}</td>
-                    <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(item.Transaksi.total_dpp).replace(',', '.') }}</td>
-                    <td class="py-3 px-6 text-right font-bold text-red-600 bg-red-50/20">Rp {{ "{:,.0f}".format(item.Transaksi.total_pbjt).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 font-bold text-gray-800">{{ item.nama_usaha }}</td>
+                    <td class="py-3 px-6 text-right font-medium">Rp {{ "{:,.0f}".format(item.Transaksi.total_dpp).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right font-black text-red-600 bg-red-50/20">Rp {{ "{:,.0f}".format(item.Transaksi.total_pbjt).replace(',', '.') }}</td>
                     <td class="py-3 px-6 text-center">
-                        <button onclick="lihatDetail('{{ item.Transaksi.id }}')" class="text-blue-600 hover:text-blue-800 text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors font-medium">
+                        <button onclick="lihatDetail('{{ item.Transaksi.id }}')" class="text-blue-600 hover:text-blue-800 text-xs bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors font-bold w-full">
                             Detail
                         </button>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="py-12 text-center text-gray-500">
-                        <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-3 block"></i>
-                        Tidak ada transaksi ditemukan pada rentang filter ini.
+                    <td colspan="6" class="py-16 text-center text-gray-500">
+                        <i class="fa-solid fa-folder-open text-5xl text-gray-300 mb-4 block"></i>
+                        <span class="font-medium">Tidak ada transaksi ditemukan pada rentang filter ini.</span>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- PAGINATION CONTROL -->
+    {% if transaksi_paginated.pages > 1 %}
+    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white rounded-b-2xl">
+        <div class="text-sm text-gray-500">
+            Menampilkan <span class="font-bold text-gray-800">{{ (transaksi_paginated.page - 1) * transaksi_paginated.per_page + 1 }}</span> sampai <span class="font-bold text-gray-800">{{ min(transaksi_paginated.page * transaksi_paginated.per_page, transaksi_paginated.total) }}</span> dari <span class="font-bold text-gray-800">{{ transaksi_paginated.total }}</span> data
+        </div>
+        <div class="flex gap-1">
+            <!-- Tombol Previous -->
+            <a href="{% if transaksi_paginated.has_prev %}{{ url_for('admin_bp.riwayat_transaksi', page=transaksi_paginated.prev_num, start_date=current_start_date, end_date=current_end_date, wp_id=current_wp_id, no_struk=current_no_struk) }}{% else %}#{% endif %}" 
+               class="px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors {% if transaksi_paginated.has_prev %}bg-white text-gray-700 hover:bg-gray-50 border-gray-300{% else %}bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed pointer-events-none{% endif %}">
+                <i class="fa-solid fa-chevron-left text-xs mr-1"></i> Prev
+            </a>
+
+            <!-- Tombol Next -->
+            <a href="{% if transaksi_paginated.has_next %}{{ url_for('admin_bp.riwayat_transaksi', page=transaksi_paginated.next_num, start_date=current_start_date, end_date=current_end_date, wp_id=current_wp_id, no_struk=current_no_struk) }}{% else %}#{% endif %}" 
+               class="px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors {% if transaksi_paginated.has_next %}bg-white text-gray-700 hover:bg-gray-50 border-gray-300{% else %}bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed pointer-events-none{% endif %}">
+                Next <i class="fa-solid fa-chevron-right text-xs ml-1"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
-<!-- Modal Detail Transaksi (Sembunyi by Default) -->
-<div id="modalDetail" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-lg w-full max-w-lg mx-4 overflow-hidden">
+<!-- Modal Detail Transaksi -->
+<div id="modalOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden items-center justify-center z-50 transition-opacity duration-300 opacity-0">
+    <div id="modalBox" class="bg-white rounded-2xl shadow-xl w-full max-w-xl mx-4 overflow-hidden transform scale-95 transition-transform duration-300">
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-            <h3 class="font-bold text-gray-800">Detail Pesanan</h3>
-            <button onclick="tutupModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+            <h3 class="font-bold text-gray-800"><i class="fa-solid fa-receipt mr-2 text-blue-600"></i> Detail Struk Pesanan</h3>
+            <button onclick="tutupModal()" class="text-gray-400 hover:text-red-500 bg-white hover:bg-red-50 h-8 w-8 rounded-lg flex items-center justify-center transition-colors">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
         </div>
-        <div class="p-6">
-            <div class="flex justify-between mb-4 border-b pb-4 border-dashed">
+        <div class="p-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between mb-4 border-b pb-4 border-dashed border-gray-300 bg-blue-50/30 p-3 rounded-lg">
                 <div>
-                    <p class="text-xs text-gray-500">No. Struk</p>
-                    <p class="font-mono font-bold" id="modalStruk">-</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">No. Struk</p>
+                    <p class="font-mono font-black text-gray-800" id="modalStruk">-</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-xs text-gray-500">Waktu Transaksi</p>
-                    <p class="font-medium text-sm" id="modalWaktu">-</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">Waktu Transaksi</p>
+                    <p class="font-bold text-sm text-gray-800" id="modalWaktu">-</p>
                 </div>
             </div>
             
             <table class="w-full text-sm mb-4">
                 <thead>
-                    <tr class="text-gray-500 border-b">
-                        <th class="text-left pb-2">Item</th>
-                        <th class="text-center pb-2">Qty</th>
-                        <th class="text-right pb-2">Harga</th>
-                        <th class="text-right pb-2">Subtotal</th>
+                    <tr class="text-gray-500 border-b border-gray-200 uppercase text-xs">
+                        <th class="text-left py-2 font-bold">Item Pesanan</th>
+                        <th class="text-center py-2 font-bold w-12">Qty</th>
+                        <th class="text-right py-2 font-bold">Harga</th>
+                        <th class="text-right py-2 font-bold">Subtotal</th>
                     </tr>
                 </thead>
                 <tbody id="modalItems" class="divide-y divide-gray-100">
@@ -171,30 +198,36 @@
                 </tbody>
             </table>
             
-            <div class="border-t pt-3 flex justify-between items-center bg-gray-50 -mx-6 px-6 pb-2">
-                <span class="font-bold text-gray-600">Grand Total</span>
-                <span class="font-bold text-lg text-gray-800" id="modalGrandTotal">Rp 0</span>
+            <div class="border-t-2 border-gray-800 pt-3 flex justify-between items-center mt-6">
+                <span class="font-bold text-gray-600 uppercase">Grand Total</span>
+                <span class="font-black text-xl text-gray-800" id="modalGrandTotal">Rp 0</span>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Fungsi untuk memformat angka ke rupiah
     const formatRupiah = (angka) => {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
     }
 
-    // Fungsi fetch data dari API dan tampilkan di modal
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalBox = document.getElementById('modalBox');
+
     async function lihatDetail(trx_id) {
-        const modal = document.getElementById('modalDetail');
         const tbody = document.getElementById('modalItems');
         
-        // Tampilkan modal loading state
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-400"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Mengambil data...</td></tr>';
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        // Tampilkan Modal dengan Animasi
+        modalOverlay.classList.remove('hidden');
+        modalOverlay.classList.add('flex');
+        // setTimeout for transition effect
+        setTimeout(() => {
+            modalOverlay.classList.remove('opacity-0');
+            modalBox.classList.remove('scale-95');
+        }, 10);
 
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 block"></i>Memuat Detail...</td></tr>';
+        
         try {
             const response = await fetch(`/admin/transaksi/detail/${trx_id}`);
             const data = await response.json();
@@ -206,23 +239,38 @@
             tbody.innerHTML = '';
             data.items.forEach(item => {
                 tbody.innerHTML += `
-                    <tr>
-                        <td class="py-2 text-gray-800">${item.nama_item}</td>
-                        <td class="py-2 text-center text-gray-600">${item.qty}</td>
-                        <td class="py-2 text-right text-gray-600">${formatRupiah(item.harga_satuan)}</td>
-                        <td class="py-2 text-right font-medium text-gray-800">${formatRupiah(item.subtotal)}</td>
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 text-gray-800 font-medium">${item.nama_item}</td>
+                        <td class="py-3 text-center text-gray-600 font-bold bg-gray-50">${item.qty}</td>
+                        <td class="py-3 text-right text-gray-500">${formatRupiah(item.harga_satuan)}</td>
+                        <td class="py-3 text-right font-bold text-gray-800">${formatRupiah(item.subtotal)}</td>
                     </tr>
                 `;
             });
         } catch (error) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500">Gagal memuat detail data.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-red-500 font-bold">Gagal memuat detail data. Periksa koneksi.</td></tr>';
         }
     }
 
     function tutupModal() {
-        const modal = document.getElementById('modalDetail');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        modalOverlay.classList.add('opacity-0');
+        modalBox.classList.add('scale-95');
+        
+        // Tunggu animasi selesai baru hidden
+        setTimeout(() => {
+            modalOverlay.classList.add('hidden');
+            modalOverlay.classList.remove('flex');
+        }, 300);
     }
+
+    // Tutup modal jika user mengklik area gelap (luar box putih)
+    modalOverlay.addEventListener('click', function(e) {
+        if (e.target === modalOverlay) { tutupModal(); }
+    });
+
+    // Tutup modal menggunakan tombol ESC pada keyboard
+    document.addEventListener('keydown', function(e) {
+        if (e.key === "Escape" && !modalOverlay.classList.contains('hidden')) { tutupModal(); }
+    });
 </script>
 {% endblock %}

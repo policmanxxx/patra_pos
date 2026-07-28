@@ -13,7 +13,7 @@ def login():
         if current_user.role == 'admin':
             return redirect(url_for('admin_bp.index')) # Sesuaikan nama fungsi dashboard admin Anda
         else:
-            return redirect(url_for('ui_pos.index')) # Sesuaikan nama fungsi kasir Anda
+            return redirect(url_for('wp_panel_bp.index')) # Sesuaikan nama fungsi kasir Anda
 
     # Jika ada pengiriman form login (POST)
     if request.method == 'POST':
@@ -29,7 +29,7 @@ def login():
             if user.role == 'admin':
                 return redirect(url_for('admin_bp.index'))
             else:
-                return redirect(url_for('ui_pos_bp.halaman_kasir'))
+                return redirect(url_for('wp_panel_bp.index'))
         else:
             flash('Username atau password salah!', 'error')
 

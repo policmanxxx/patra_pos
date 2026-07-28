@@ -116,6 +116,7 @@ class Transaksi(db.Model):
     no_struk = db.Column(db.String(50), nullable=False)
     waktu_transaksi = db.Column(db.DateTime, default=datetime.utcnow)
     no_meja = db.Column(db.String(50), nullable=True)
+    
     # Komponen Perhitungan Pajak
     total_dpp = db.Column(db.Numeric(15, 2), nullable=False, default=0)    # Dasar Pengenaan Pajak
     total_diskon = db.Column(db.Numeric(15, 2), nullable=False, default=0)
@@ -125,10 +126,20 @@ class Transaksi(db.Model):
     metode_pembayaran = db.Column(db.String(50), default='Tunai')
     status = db.Column(db.String(20), default='Selesai')
     
-    # Flag Integrasi BPKPD
+    # Flag Integrasi Server
     is_reported = db.Column(db.Boolean, default=False) 
     
+    # ---------------------------------------------------------
+    # PENAMBAHAN FITUR VOID (TRANSACTION LEVEL)
+    # ---------------------------------------------------------
+    is_void = db.Column(db.Boolean, default=False)
+    void_at = db.Column(db.DateTime, nullable=True)
+    void_by_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=True)
+    void_reason = db.Column(db.String(255), nullable=True)
+    
+    # Relationship ke Detail
     details = db.relationship('TransaksiDetail', backref='transaksi', lazy=True, cascade="all, delete-orphan")
+    void_by = db.relationship('User', foreign_keys=[void_by_id], backref='transaksi_divoid', lazy=True)
 
 class TransaksiDetail(db.Model):
     __tablename__ = 'transaksi_detail'
@@ -141,9 +152,17 @@ class TransaksiDetail(db.Model):
     nama_item_snapshot = db.Column(db.String(150), nullable=False)
     harga_satuan_snapshot = db.Column(db.Numeric(15, 2), nullable=False)
     hpp_snapshot = db.Column(db.Numeric(15, 2), default=0)
-    hpp_snapshot = db.Column(db.Numeric(15, 2), default=0)
     
     qty = db.Column(db.Integer, nullable=False, default=1)
     subtotal_dpp = db.Column(db.Numeric(15, 2), nullable=False)
     subtotal_pajak = db.Column(db.Numeric(15, 2), nullable=False, default=0)
     total_harga = db.Column(db.Numeric(15, 2), nullable=False)
+
+    # ---------------------------------------------------------
+    # PENAMBAHAN FITUR VOID (ITEM LEVEL)
+    # ---------------------------------------------------------
+    is_void = db.Column(db.Boolean, default=False)
+    void_at = db.Column(db.DateTime, nullable=True)
+    void_by_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.id'), nullable=True)
+    void_reason = db.Column(db.String(255), nullable=True)
+    void_by = db.relationship('User', foreign_keys=[void_by_id], lazy=True)
