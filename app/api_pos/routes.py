@@ -194,6 +194,8 @@ def login_mobile():
                 'user_id': str(user.id),
                 'wp_id': str(user.wp_id) if user.wp_id else None,
                 'nama_lengkap': user.nama_lengkap,
+                'kasir_nama': user.nama_lengkap,
+                'kasir_id': user.user_id,
                 'role': user.role
             }
         }), 200
