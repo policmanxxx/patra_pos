@@ -21,9 +21,9 @@ def test_wajib_pajak():
     if not wp_exist:
         # 2. Jika kosong, kita buat 1 data dummy
         wp_baru = WajibPajak(
-            npwpd="PJT-3516-2026-001",
-            nama_usaha="Warkop Mojopahit",
-            alamat="Jl. Gajah Mada, Kota Mojokerto",
+            npwpd="P000000000000",
+            nama_usaha="BPKPD",
+            alamat="Jl. Letkol Sumarjo, Kota Mojokerto",
             kode_kecamatan="35161", # Contoh kode
             tarif_pbjt=10.00
         )
@@ -333,7 +333,7 @@ def api_laporan_ringkasan():
     # 4. Hitung Laba Kotor (Omzet - HPP)
     total_hpp = db.session.query(func.sum(TransaksiDetail.hpp_snapshot * TransaksiDetail.qty))\
         .join(Transaksi).filter(
-            Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai', 
+            Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai', Transaksi.is_void == False,TransaksiDetail.is_void == False,
             Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date
         ).scalar() or 0
     
@@ -345,7 +345,7 @@ def api_laporan_ringkasan():
         func.sum(TransaksiDetail.qty).label('total_qty'),
         func.sum(TransaksiDetail.subtotal_dpp).label('total_pendapatan')
     ).join(Transaksi).filter(
-        Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai', 
+        Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai', TransaksiDetail.is_void == False,Transaksi.is_void == False,
         Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date
     ).group_by(TransaksiDetail.nama_item_snapshot).order_by(db.desc('total_qty')).limit(5).all()
 
@@ -363,6 +363,7 @@ def api_laporan_ringkasan():
         func.sum(Transaksi.total_dpp).label('omzet')
     ).filter(
         Transaksi.wp_id == wp_id, Transaksi.status == 'Selesai',
+        TransaksiDetail.is_void == False,Transaksi.is_void == False,
         Transaksi.waktu_transaksi >= start_date, Transaksi.waktu_transaksi <= end_date
     ).group_by(func.date(Transaksi.waktu_transaksi)).order_by('tanggal').all()
 
@@ -488,6 +489,19 @@ def api_void_transaksi():
         if getattr(trx, 'is_void', False):
             return jsonify({'success': False, 'message': 'Transaksi ini sudah dibatalkan sebelumnya'}), 400
 
+        # ---> TAMBAHAN LOGIKA BATAS WAKTU 1 JAM <---
+        # Catatan: Jika server Anda menggunakan zona waktu lokal, gunakan datetime.now()
+        # Jika server Anda menyimpan waktu dalam UTC, gunakan datetime.utcnow()
+        waktu_sekarang = datetime.now() 
+        selisih_waktu = waktu_sekarang - trx.waktu_transaksi
+        
+        # Jika selisih lebih dari 1 jam (3600 detik)
+        if selisih_waktu > timedelta(hours=1):
+            return jsonify({
+                'success': False, 
+                'message': 'Batas waktu habis! Void hanya dapat dilakukan maksimal 1 jam setelah transaksi.'
+            }), 400
+        # --------------------------------------------
         # 3. Update Header Transaksi
         trx.is_void = True
         trx.void_at = datetime.utcnow()
