@@ -221,6 +221,7 @@ def sinkronisasi_profil():
             'alamat': wp.alamat,
             'tarif_pbjt': float(wp.tarif_pbjt),
             'logo_url': wp.logo_url,
+            'tarif_pbjt':wp.tarif_pbjt,
             'logo_struk_url':wp.logo_struk_url
         }
     }), 200
