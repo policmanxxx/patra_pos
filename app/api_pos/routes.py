@@ -170,6 +170,7 @@ def sync_transaksi_mobile():
         logging.error(f"Error sync transaksi mobile: {str(e)}")
         return jsonify({'status': 'error', 'pesan': str(e)}), 500    
 
+# LOGIN MOBILE
 @api_bp.route('/login', methods=['POST'])
 def login_mobile():
     data = request.get_json()
@@ -222,7 +223,8 @@ def sinkronisasi_profil():
             'tarif_pbjt': float(wp.tarif_pbjt),
             'logo_url': wp.logo_url,
             'tarif_pbjt':wp.tarif_pbjt,
-            'logo_struk_url':wp.logo_struk_url
+            'logo_struk_url':wp.logo_struk_url,
+            'kode_wp':wp.kode_wp
         }
     }), 200
     

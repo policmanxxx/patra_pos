@@ -26,7 +26,8 @@ class WajibPajak(db.Model):
     logo_url = db.Column(db.String(255), nullable=True, default='default_logo.png')
     
     # Logo Struk (Tambahan Baru: Hitam Putih, ukuran kecil untuk thermal)
-    logo_struk_url = db.Column(db.String(255), nullable=True) 
+    logo_struk_url = db.Column(db.String(255), nullable=True)
+    kode_wp = db.Column(db.String(10), unique=True, server_default=db.text("''"))    
 
     users = db.relationship('User', backref='wajib_pajak', lazy=True, cascade="all, delete-orphan")
     menus = db.relationship('Menu', backref='wajib_pajak', lazy=True, cascade="all, delete-orphan")
