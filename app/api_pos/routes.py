@@ -195,7 +195,7 @@ def login_mobile():
                 'wp_id': str(user.wp_id) if user.wp_id else None,
                 'nama_lengkap': user.nama_lengkap,
                 'kasir_nama': user.nama_lengkap,
-                'kasir_id': user.user_id,
+                'kasir_id': str(user.id),
                 'role': user.role
             }
         }), 200
@@ -299,7 +299,73 @@ def api_tambah_menu():
         # Cetak error ke terminal Flask agar jika ada kendala lain terlihat jelas
         print(f"DEBUG ERROR 500 TAMBAH MENU: {str(e)}")
         return jsonify({'success': False, 'message': f'Kesalahan Server: {str(e)}'}), 500   
-    
+ 
+@api_bp.route('/kategori/tambah', methods=['POST'])
+def api_tambah_kategori():
+    try:
+        wp_id_str = request.form.get('wp_id') or request.json.get('wp_id')
+        nama_kategori = request.form.get('nama_kategori') or request.json.get('nama_kategori')
+
+        if not wp_id_str or not nama_kategori:
+            return jsonify({'success': False, 'message': 'wp_id dan nama_kategori wajib diisi!'}), 400
+
+        try:
+            wp_id = uuid.UUID(wp_id_str)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Format wp_id tidak valid!'}), 400
+
+        # Cari urutan terakhir
+        kategori_terakhir = KategoriMenu.query.filter_by(wp_id=wp_id).order_by(KategoriMenu.urutan.desc()).first()
+        urutan_baru = (kategori_terakhir.urutan + 1) if kategori_terakhir else 1
+
+        kategori_baru = KategoriMenu(
+            wp_id=wp_id,
+            nama_kategori=nama_kategori,
+            urutan=urutan_baru
+        )
+        
+        db.session.add(kategori_baru)
+        db.session.commit()
+
+        return jsonify({
+            'success': True, 
+            'message': 'Kategori berhasil ditambahkan!',
+            'data': {
+                'id': str(kategori_baru.id),
+                'nama_kategori': kategori_baru.nama_kategori
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error Server: {str(e)}'}), 500 
+
+@api_bp.route('/menu/hapus', methods=['POST'])
+def api_hapus_menu():
+    try:
+        data = request.get_json()
+        menu_id_str = data.get('menu_id')
+
+        if not menu_id_str:
+            return jsonify({'success': False, 'message': 'ID Menu wajib diisi'}), 400
+
+        menu_id = uuid.UUID(menu_id_str)
+        menu = Menu.query.get(menu_id)
+
+        if not menu:
+            return jsonify({'success': False, 'message': 'Menu tidak ditemukan'}), 404
+
+        # Soft delete: Ubah is_active jadi False agar tidak muncul di POS, 
+        # tapi histori transaksi masa lalu tidak error
+        menu.is_active = False 
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': f'Menu {menu.nama_menu} berhasil dinonaktifkan/dihapus.'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error Server: {str(e)}'}), 500
+ 
 @api_bp.route('/laporan/ringkasan', methods=['GET'])
 def api_laporan_ringkasan():
     # 1. Ambil Parameter dari Flutter
@@ -544,3 +610,32 @@ def api_void_transaksi():
             'success': False, 
             'message': f'Terjadi kesalahan internal: {str(e)}'
         }), 500
+        
+@api_bp.route('/cek-versi', methods=['GET'])
+def cek_versi_aplikasi():
+    try:
+        # Nilai ini (version_code) harus dicocokkan dengan angka 'version' di file pubspec.yaml Flutter Anda
+        # Misalnya di pubspec.yaml tertulis version: 1.0.0+2, maka version_code nya adalah 2.
+        versi_terbaru_code = 1
+        versi_terbaru_name = "1.0.1"
+        link_download = "https://patra.bpkpdmjktpro.sbs/static/download/pos-terbaru.apk" # Ganti dengan link APK/PlayStore Anda
+        wajib_update = True
+        catatan_rilis = "Perbaikan sinkronisasi dan penambahan fitur void transaksi."
+
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'latest_version_code': versi_terbaru_code,
+                'latest_version_name': versi_terbaru_name,
+                'download_url': link_download,
+                'force_update': wajib_update,
+                'release_notes': catatan_rilis
+            }
+        }), 200
+
+    except Exception as e:
+        print(f"DEBUG ERROR CEK VERSI: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Terjadi kesalahan internal: {str(e)}'
+        }), 500        
