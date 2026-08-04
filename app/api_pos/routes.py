@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request,current_app
+from flask import Blueprint, jsonify, request,current_app,render_template_string
 from app.extensions import db
 from datetime import datetime, timedelta
 from app.models import WajibPajak,KategoriMenu, Menu,Transaksi,TransaksiDetail,User
@@ -9,6 +9,7 @@ from .sync_handler import process_bulk_transactions
 from flask_jwt_extended import create_access_token,jwt_required, get_jwt
 from flask_login import login_required,current_user
 import uuid
+import logging
 from sqlalchemy import func
 # Mendefinisikan Blueprint untuk API POS
 api_bp = Blueprint('api_pos', __name__)
@@ -641,3 +642,238 @@ def cek_versi_aplikasi():
             'status': 'error',
             'message': f'Terjadi kesalahan internal: {str(e)}'
         }), 500        
+        
+
+# CETAK STRUK ONLINE
+@api_bp.route('/struk/<id_trx>', methods=['GET'])
+def web_struk(id_trx):
+    # 1. Cari data transaksi
+    trx = Transaksi.query.filter_by(id=id_trx).first()
+    
+    if not trx:
+        return "<h3>Struk tidak ditemukan atau belum tersinkronisasi ke server.</h3>", 404
+
+    # 2. Ambil data Wajib Pajak (Toko)
+    wp = WajibPajak.query.get(trx.wp_id)
+    nama_toko = wp.nama_usaha if wp else "Nama Toko"
+    alamat_toko = wp.alamat if wp else "Alamat Toko"
+
+    # 3. HTML & CSS Desain E-Receipt Modern
+    html_struk = """
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>E-Receipt | {{ trx.no_struk }}</title>
+        <!-- Menggunakan Google Fonts untuk tampilan modern -->
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+        <style>
+            body { 
+                font-family: 'Plus Jakarta Sans', sans-serif; 
+                background-color: #f3f4f6; /* Abu-abu terang */
+                margin: 0; 
+                padding: 20px; 
+                color: #1f2937;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }
+            .receipt-card { 
+                background: #ffffff; 
+                width: 100%; 
+                max-width: 380px; 
+                border-radius: 16px; 
+                box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+                overflow: hidden;
+            }
+            .receipt-header {
+                text-align: center;
+                padding: 24px 20px 16px;
+                border-bottom: 2px dashed #e5e7eb;
+            }
+            .icon-check {
+                width: 50px;
+                height: 50px;
+                background-color: #10b981; /* Hijau sukses */
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 12px;
+            }
+            .icon-check svg {
+                width: 28px;
+                height: 28px;
+                color: white;
+            }
+            .shop-name {
+                font-size: 20px;
+                font-weight: 700;
+                margin: 0 0 4px;
+                color: #111827;
+            }
+            .shop-address {
+                font-size: 13px;
+                color: #6b7280;
+                margin: 0;
+                line-height: 1.4;
+            }
+            .receipt-body {
+                padding: 20px;
+            }
+            .info-row {
+                display: flex;
+                justify-content: space-between;
+                font-size: 13px;
+                margin-bottom: 10px;
+                color: #4b5563;
+            }
+            .info-value {
+                font-weight: 600;
+                color: #111827;
+                text-align: right;
+            }
+            .divider { 
+                border-bottom: 2px dashed #e5e7eb; 
+                margin: 16px 0; 
+            }
+            table { 
+                width: 100%; 
+                border-collapse: collapse; 
+            }
+            .item-name {
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+                padding-bottom: 4px;
+            }
+            .item-details {
+                font-size: 13px;
+                color: #6b7280;
+                padding-bottom: 12px;
+            }
+            .item-total {
+                font-size: 14px;
+                font-weight: 600;
+                color: #111827;
+                text-align: right;
+                padding-bottom: 12px;
+            }
+            .summary-row {
+                display: flex;
+                justify-content: space-between;
+                font-size: 14px;
+                margin-bottom: 8px;
+                color: #4b5563;
+            }
+            .grand-total {
+                background-color: #f0fdfa; /* Teal super muda */
+                border-radius: 10px;
+                padding: 16px;
+                margin-top: 16px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border: 1px solid #ccfbf1;
+            }
+            .grand-total-label {
+                font-size: 15px;
+                font-weight: 700;
+                color: #0f172a;
+            }
+            .grand-total-value {
+                font-size: 20px;
+                font-weight: 700;
+                color: #0f766e; /* Teal menyesuaikan tombol Flutter */
+            }
+            .receipt-footer {
+                text-align: center;
+                padding: 20px;
+                background-color: #f8fafc;
+                font-size: 13px;
+                color: #64748b;
+                border-top: 2px dashed #e5e7eb;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="receipt-card">
+            <!-- HEADER: Logo Centang & Info Toko -->
+            <div class="receipt-header">
+                <div class="icon-check">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                <h2 class="shop-name">{{ nama_toko }}</h2>
+                <p class="shop-address">{{ alamat_toko }}</p>
+            </div>
+            
+            <!-- BODY: Detail Transaksi -->
+            <div class="receipt-body">
+                <div class="info-row">
+                    <span>No. Struk</span>
+                    <span class="info-value">{{ trx.no_struk }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Waktu</span>
+                    <span class="info-value">{{ trx.waktu_transaksi.strftime('%d %b %Y, %H:%M') }}</span>
+                </div>
+                <div class="info-row">
+                    <span>Pembayaran</span>
+                    <span class="info-value">{{ trx.metode_pembayaran }}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <!-- Rincian Pesanan -->
+                <table>
+                    {% for item in trx.details %}
+                    <tr>
+                        <td colspan="2" class="item-name">{{ item.nama_item_snapshot }}</td>
+                    </tr>
+                    <tr>
+                        <td class="item-details">{{ item.qty }} x Rp {{ "{:,.0f}".format(item.harga_satuan_snapshot).replace(',', '.') }}</td>
+                        <td class="item-total">Rp {{ "{:,.0f}".format(item.total_harga).replace(',', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                
+                <div class="divider"></div>
+                
+                <!-- Rincian Pajak & Total -->
+                <div class="summary-row">
+                    <span>Total DPP</span>
+                    <span>Rp {{ "{:,.0f}".format(trx.total_dpp).replace(',', '.') }}</span>
+                </div>
+                {% if trx.total_diskon > 0 %}
+                <div class="summary-row">
+                    <span>Total Diskon</span>
+                    <span style="color: #ef4444;">- Rp {{ "{:,.0f}".format(trx.total_diskon).replace(',', '.') }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-row">
+                    <span>PBJT (10%)</span>
+                    <span>Rp {{ "{:,.0f}".format(trx.total_pbjt).replace(',', '.') }}</span>
+                </div>
+                
+                <!-- Kotak Grand Total -->
+                <div class="grand-total">
+                    <span class="grand-total-label">Total Tagihan</span>
+                    <span class="grand-total-value">Rp {{ "{:,.0f}".format(trx.grand_total).replace(',', '.') }}</span>
+                </div>
+            </div>
+            
+            <!-- FOOTER -->
+            <div class="receipt-footer">
+                <strong>Terima kasih atas kunjungan Anda!</strong><br>
+                <span style="font-size: 11px; opacity: 0.8; margin-top: 6px; display: block;">Simpan struk ini sebagai bukti pembayaran yang sah. Anda dapat melakukan tangkapan layar (screenshot).</span>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return render_template_string(html_struk, trx=trx, nama_toko=nama_toko, alamat_toko=alamat_toko)
