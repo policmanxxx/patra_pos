@@ -1,104 +1,126 @@
 {% extends "wp_panel/base_wp.html" %}
 
 {% block content %}
-<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-800">Laporan Bulanan</h1>
-        <p class="text-gray-500 text-sm mt-1">Rekapitulasi total omzet dan pajak per hari dalam satu bulan.</p>
+<!-- ========================================== -->
+<!-- AREA NON-PRINT (UI Web, Filter, Cards)     -->
+<!-- ========================================== -->
+<div class="no-print">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Laporan Bulanan</h1>
+            <p class="text-gray-500 text-sm mt-1">Rekapitulasi total omzet dan pajak per hari dalam satu bulan.</p>
+        </div>
+        
+        <!-- Panel Filter Bulan & Tahun -->
+        <form method="GET" action="{{ url_for('wp_panel_bp.laporan_bulanan') }}" class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-2 px-2">
+                <span class="text-sm font-medium text-gray-500">Bulan:</span>
+                <select name="bulan" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border cursor-pointer">
+                    {% for b_val, b_name in bulan_list %}
+                        <option value="{{ b_val }}" {% if b_val == selected_month %}selected{% endif %}>{{ b_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-center gap-2 px-2 border-l border-gray-200">
+                <span class="text-sm font-medium text-gray-500">Tahun:</span>
+                <select name="tahun" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border cursor-pointer">
+                    {% for t in tahun_list %}
+                        <option value="{{ t }}" {% if t == selected_year %}selected{% endif %}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-search"></i> Tampilkan
+            </button>
+            <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1 ml-2" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> Cetak
+            </button>
+        </form>
     </div>
+
+    <!-- KARTU RINGKASAN TOTAL BULAN INI -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                <i class="fa-solid fa-calendar-check text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
+                <h3 class="text-xl font-bold text-gray-800">{{ "{:,.0f}".format(grand_total_trx).replace(',', '.') }} <span class="text-sm font-normal text-gray-400">struk</span></h3>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                <i class="fa-solid fa-chart-line text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Total DPP</p>
+                <h3 class="text-xl font-bold text-blue-700">Rp {{ "{:,.0f}".format(grand_total_dpp).replace(',', '.') }}</h3>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+                <i class="fa-solid fa-building-columns text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Total PBJT (10%)</p>
+                <h3 class="text-xl font-bold text-red-600">Rp {{ "{:,.0f}".format(grand_total_pbjt).replace(',', '.') }}</h3>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 relative overflow-hidden">
+            <div class="absolute right-0 top-0 h-full w-2 bg-teal-500"></div>
+            <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
+                <i class="fa-solid fa-wallet text-xl"></i>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-500">Total Pendapatan</p>
+                <h3 class="text-xl font-bold text-teal-700">Rp {{ "{:,.0f}".format(grand_total_bayar).replace(',', '.') }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- AREA PRINT (Tabel + Tanda Tangan)          -->
+<!-- ========================================== -->
+<div id="print-area" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
     
-    <!-- Panel Filter Bulan & Tahun -->
-    <form method="GET" action="{{ url_for('wp_panel_bp.laporan_bulanan') }}" class="bg-white p-2 rounded-lg shadow-sm border border-gray-200 flex flex-wrap items-center gap-2">
-        <div class="flex items-center gap-2 px-2">
-            <span class="text-sm font-medium text-gray-500">Bulan:</span>
-            <select name="bulan" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border cursor-pointer">
-                {% for b_val, b_name in bulan_list %}
-                    <option value="{{ b_val }}" {% if b_val == selected_month %}selected{% endif %}>{{ b_name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="flex items-center gap-2 px-2 border-l border-gray-200">
-            <span class="text-sm font-medium text-gray-500">Tahun:</span>
-            <select name="tahun" class="text-sm border-gray-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-gray-50 px-2 py-1 outline-none border cursor-pointer">
-                {% for t in tahun_list %}
-                    <option value="{{ t }}" {% if t == selected_year %}selected{% endif %}>{{ t }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1">
-            <i class="fa-solid fa-search"></i> Tampilkan
-        </button>
-        <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-bold transition flex items-center gap-1 ml-2" onclick="window.print()">
-            <i class="fa-solid fa-print"></i> Cetak
-        </button>
-    </form>
-</div>
+    <!-- KOP LAPORAN (Hanya Muncul Saat Print) -->
+    <div class="hidden print-block px-6 pt-8 pb-4 text-center">
+        <h2 class="text-xl font-bold uppercase text-gray-900">Laporan Rekapitulasi Penjualan Bulanan</h2>
+        <h3 class="text-lg font-bold text-gray-800">{{ current_user.nama_usaha | default('Wajib Pajak') }}</h3>
+        <p class="text-sm text-gray-600 mt-1">
+            Periode: 
+            {% for b_val, b_name in bulan_list %}
+                {% if b_val == selected_month %}{{ b_name }}{% endif %}
+            {% endfor %} 
+            {{ selected_year }}
+        </p>
+        <div class="w-full border-b-2 border-black mt-4"></div>
+    </div>
 
-<!-- KARTU RINGKASAN TOTAL BULAN INI -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
-            <i class="fa-solid fa-calendar-check text-xl"></i>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
-            <h3 class="text-xl font-bold text-gray-800">{{ "{:,.0f}".format(grand_total_trx).replace(',', '.') }} <span class="text-sm font-normal text-gray-400">struk</span></h3>
-        </div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
-            <i class="fa-solid fa-chart-line text-xl"></i>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-gray-500">Total DPP</p>
-            <h3 class="text-xl font-bold text-blue-700">Rp {{ "{:,.0f}".format(grand_total_dpp).replace(',', '.') }}</h3>
-        </div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
-        <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 shrink-0">
-            <i class="fa-solid fa-building-columns text-xl"></i>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-gray-500">Total PBJT (10%)</p>
-            <h3 class="text-xl font-bold text-red-600">Rp {{ "{:,.0f}".format(grand_total_pbjt).replace(',', '.') }}</h3>
-        </div>
-    </div>
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 relative overflow-hidden">
-        <div class="absolute right-0 top-0 h-full w-2 bg-teal-500"></div>
-        <div class="w-12 h-12 rounded-full bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
-            <i class="fa-solid fa-wallet text-xl"></i>
-        </div>
-        <div>
-            <p class="text-sm font-medium text-gray-500">Total Pendapatan</p>
-            <h3 class="text-xl font-bold text-teal-700">Rp {{ "{:,.0f}".format(grand_total_bayar).replace(',', '.') }}</h3>
-        </div>
-    </div>
-</div>
-
-<!-- TABEL REKAPITULASI PER HARI -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden print-area">
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+    <!-- TABEL DATA -->
+    <div class="overflow-x-auto w-full">
+        <table class="w-full text-left border-collapse print-table">
             <thead class="bg-teal-900 text-white text-xs uppercase tracking-wider">
                 <tr>
-                    <th class="py-4 px-6 font-semibold">Tanggal</th>
-                    <th class="py-4 px-6 font-semibold text-center">Jml Transaksi</th>
-                    <th class="py-4 px-6 font-semibold text-right">DPP (Omzet)</th>
-                    <th class="py-4 px-6 font-semibold text-right">PBJT (10%)</th>
-                    <th class="py-4 px-6 font-semibold text-right">Total Pendapatan</th>
+                    <th class="py-4 px-6 font-semibold border-b print-border">Tanggal</th>
+                    <th class="py-4 px-6 font-semibold text-center border-b print-border">Jml Transaksi</th>
+                    <th class="py-4 px-6 font-semibold text-right border-b print-border">DPP (Omzet)</th>
+                    <th class="py-4 px-6 font-semibold text-right border-b print-border">PBJT (10%)</th>
+                    <th class="py-4 px-6 font-semibold text-right border-b print-border">Total Pendapatan</th>
                     <th class="py-4 px-6 font-semibold text-center no-print">Aksi</th>
                 </tr>
             </thead>
             <tbody class="text-sm text-gray-700">
                 {% for item in data_harian %}
-                <tr class="hover:bg-teal-50 border-b border-gray-100 transition-colors">
-                    <td class="py-3 px-6 whitespace-nowrap font-medium text-gray-900">{{ item.tanggal_tampil }}</td>
-                    <td class="py-3 px-6 text-center">{{ item.total_trx }}</td>
-                    <td class="py-3 px-6 text-right">Rp {{ "{:,.0f}".format(item.total_dpp).replace(',', '.') }}</td>
-                    <td class="py-3 px-6 text-right text-red-600 font-medium">Rp {{ "{:,.0f}".format(item.total_pbjt).replace(',', '.') }}</td>
-                    <td class="py-3 px-6 text-right font-bold text-gray-900">Rp {{ "{:,.0f}".format(item.total_bayar).replace(',', '.') }}</td>
-                    <td class="py-3 px-6 text-center no-print">
-                        <!-- Link ke Laporan Rinci yang difilter khusus pada hari tersebut -->
+                <tr class="hover:bg-teal-50 transition-colors">
+                    <td class="py-3 px-6 whitespace-nowrap font-medium text-gray-900 border-b print-border">{{ item.tanggal_tampil }}</td>
+                    <td class="py-3 px-6 text-center border-b print-border">{{ item.total_trx }}</td>
+                    <td class="py-3 px-6 text-right border-b print-border">Rp {{ "{:,.0f}".format(item.total_dpp).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right text-red-600 font-medium border-b print-border">Rp {{ "{:,.0f}".format(item.total_pbjt).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-right font-bold text-gray-900 border-b print-border">Rp {{ "{:,.0f}".format(item.total_bayar).replace(',', '.') }}</td>
+                    <td class="py-3 px-6 text-center no-print border-b">
                         <a href="{{ url_for('wp_panel_bp.laporan_penjualan', start_date=item.tanggal_filter, end_date=item.tanggal_filter) }}" class="text-teal-600 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1 rounded text-xs font-semibold transition inline-block">
                             <i class="fa-solid fa-list"></i> Rincian
                         </a>
@@ -106,8 +128,8 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="py-10 text-center text-gray-500">
-                        <i class="fa-solid fa-calendar-xmark text-3xl mb-2 text-gray-300 block"></i>
+                    <td colspan="6" class="py-10 text-center text-gray-500 border-b print-border">
+                        <i class="fa-solid fa-calendar-xmark text-3xl mb-2 text-gray-300 block no-print"></i>
                         Tidak ada transaksi pada bulan ini.
                     </td>
                 </tr>
@@ -117,36 +139,102 @@
             {% if data_harian %}
             <tfoot class="bg-gray-50 border-t-2 border-gray-200 text-gray-900 font-bold">
                 <tr>
-                    <td class="py-4 px-6 text-right uppercase text-xs tracking-wide">Grand Total:</td>
-                    <td class="py-4 px-6 text-center">{{ grand_total_trx }}</td>
-                    <td class="py-4 px-6 text-right text-blue-700">Rp {{ "{:,.0f}".format(grand_total_dpp).replace(',', '.') }}</td>
-                    <td class="py-4 px-6 text-right text-red-600">Rp {{ "{:,.0f}".format(grand_total_pbjt).replace(',', '.') }}</td>
-                    <td class="py-4 px-6 text-right text-teal-800 text-base">Rp {{ "{:,.0f}".format(grand_total_bayar).replace(',', '.') }}</td>
+                    <td class="py-4 px-6 text-right uppercase text-xs tracking-wide print-border">Grand Total:</td>
+                    <td class="py-4 px-6 text-center print-border">{{ grand_total_trx }}</td>
+                    <td class="py-4 px-6 text-right text-blue-700 print-border">Rp {{ "{:,.0f}".format(grand_total_dpp).replace(',', '.') }}</td>
+                    <td class="py-4 px-6 text-right text-red-600 print-border">Rp {{ "{:,.0f}".format(grand_total_pbjt).replace(',', '.') }}</td>
+                    <td class="py-4 px-6 text-right text-teal-800 text-base print-border">Rp {{ "{:,.0f}".format(grand_total_bayar).replace(',', '.') }}</td>
                     <td class="no-print"></td>
                 </tr>
             </tfoot>
             {% endif %}
         </table>
     </div>
+
+    <!-- AREA TANDA TANGAN (Hanya Muncul Saat Print) -->
+    <div class="hidden print-flex justify-end w-full mt-10 mb-6 pr-10">
+        <div class="text-center w-64">
+            <p class="text-sm text-gray-800 mb-1">Mojokerto, ....................................</p>
+            <p class="text-sm text-gray-800 mb-20">Pemilik / Pengelola,</p>
+            <p class="text-sm text-gray-900 font-bold underline">{{ current_user.nama_usaha | default('............................................') }}</p>
+        </div>
+    </div>
+
 </div>
 
-<!-- CSS Tambahan Khusus untuk Cetak (Print) -->
+<!-- ========================================== -->
+<!-- CSS KHUSUS PRINT                           -->
+<!-- ========================================== -->
 <style>
+    /* Secara default, sembunyikan elemen khusus print di tampilan web */
+    .print-block { display: none; }
+    .print-flex { display: none; }
+
     @media print {
+        /* Pengaturan ukuran kertas dan margin */
+        @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+        }
+
+        /* Sembunyikan seluruh isi body (termasuk sidebar, navbar, dll) */
         body * {
             visibility: hidden;
         }
-        .print-area, .print-area * {
+
+        /* Hanya tampilkan area id="print-area" dan anak-anaknya */
+        #print-area, #print-area * {
             visibility: visible;
         }
-        .print-area {
+
+        /* RESET POSISI: Tarik area print ke sudut paling kiri atas untuk menutupi ruang kosong sidebar */
+        #print-area {
             position: absolute;
             left: 0;
             top: 0;
             width: 100%;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important; /* Hilangkan shadow */
+            border: none !important;     /* Hilangkan border luar */
         }
-        .no-print {
+
+        /* Sembunyikan tombol aksi dan filter secara permanen saat dicetak */
+        .no-print, .no-print * {
             display: none !important;
+            height: 0;
+        }
+
+        /* Munculkan elemen khusus print (Kop & Tanda Tangan) */
+        .print-block { display: block !important; }
+        .print-flex { display: flex !important; }
+
+        /* Paksa browser mencetak warna background (penting untuk header tabel) */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Kustomisasi tabel agar rapi dan memiliki garis batas abu-abu saat dicetak */
+        .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        
+        .print-border {
+            border: 1px solid #d1d5db !important; /* Border gray-300 */
+        }
+
+        /* Pastikan Header Tabel tetap berwarna Teal saat dicetak */
+        .print-table thead th {
+            background-color: #134e4a !important; /* bg-teal-900 */
+            color: #ffffff !important;
+            border: 1px solid #134e4a !important;
+        }
+        
+        /* Hilangkan efek rounded di tabel saat dicetak */
+        #print-area {
+            border-radius: 0 !important;
         }
     }
 </style>
