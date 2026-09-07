@@ -165,74 +165,73 @@
 <!-- ========================================== -->
 <!-- CSS KHUSUS PRINT                           -->
 <!-- ========================================== -->
+<!-- ========================================== -->
+<!-- CSS KHUSUS PRINT                           -->
+<!-- ========================================== -->
 <style>
-    /* Secara default, sembunyikan elemen khusus print di tampilan web */
+    /* Secara default, sembunyikan elemen khusus print di tampilan web normal */
     .print-block { display: none; }
     .print-flex { display: none; }
 
     @media print {
-        /* 1. UBAH KE LANDSCAPE */
+        /* 1. Paksa kertas menjadi Landscape (Mendatar) */
         @page {
-            size: A4 landscape; 
-            margin: 1cm;
+            size: A4 landscape;
+            margin: 10mm;
         }
 
-        /* 2. Reset margin dari parent container (mematikan dorongan sidebar) */
-        html, body {
+        /* 2. Sembunyikan SEMUA elemen UI selain area cetak (Gunakan display: none, BUKAN visibility) */
+        .no-print, aside, nav, header, footer {
+            display: none !important;
+        }
+
+        /* 3. RESET TATA LETAK DASHBOARD (Sangat Penting)
+           Menghilangkan paksaan margin/padding dari sidebar (biasanya ml-64 atau pl-64) */
+        body, html, main, #app, #root {
+            background-color: white !important;
             margin: 0 !important;
             padding: 0 !important;
-            position: static !important;
+        }
+        
+        /* Menetralkan dorongan class Tailwind yang sering menggeser konten */
+        [class*="ml-"], [class*="pl-"], [class*="md:ml-"], [class*="lg:ml-"] {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
         }
 
-        /* 3. Sembunyikan semua elemen */
-        body * {
-            visibility: hidden;
-        }
-
-        /* 4. Munculkan HANYA print-area */
-        #print-area, #print-area * {
-            visibility: visible;
-        }
-
-        /* 5. Paksa print-area ke pojok kiri atas, melebar 100% penuh */
+        /* 4. Pastikan print-area merespons lebar layar penuh */
         #print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100vw !important; /* Gunakan lebar viewport (kertas) penuh */
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
             margin: 0 !important;
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
         }
 
-        /* Sembunyikan kolom aksi dan filter */
-        .no-print, .no-print * {
-            display: none !important;
-        }
-
-        /* Munculkan elemen khusus print (Kop & Tanda Tangan) */
+        /* 5. Munculkan elemen khusus print (Kop & Tanda Tangan) */
         .print-block { display: block !important; }
         .print-flex { display: flex !important; }
 
-        /* Paksa warna background (Header Tabel) tercetak */
+        /* 6. Paksa browser mencetak warna (Wajib untuk Chrome/Edge) */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        /* Kustomisasi Tabel Cetak */
+        /* 7. Kustomisasi Tabel agar tegas dan rapi */
         .print-table {
             width: 100% !important;
             border-collapse: collapse !important;
         }
         
         .print-border {
-            border: 1px solid #374151 !important; /* Gunakan abu-abu gelap agar jelas di kertas */
+            border: 1px solid #1f2937 !important; /* Abu-abu sangat gelap */
         }
 
         .print-table thead th {
-            background-color: #134e4a !important; 
+            background-color: #134e4a !important; /* Warna Hijau/Teal Gelap */
             color: #ffffff !important;
             border: 1px solid #134e4a !important;
         }
