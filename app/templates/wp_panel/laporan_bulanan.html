@@ -174,32 +174,32 @@
     .print-flex { display: none; }
 
     @media print {
-        /* 1. Paksa kertas menjadi Landscape (Mendatar) */
+        /* 1. Paksa kertas menjadi Landscape (Mendatar) dan beri ruang margin halaman */
         @page {
             size: A4 landscape;
-            margin: 10mm;
+            margin: 15mm 15mm 15mm 15mm;
         }
 
-        /* 2. Sembunyikan SEMUA elemen UI selain area cetak (Gunakan display: none, BUKAN visibility) */
+        /* 2. Sembunyikan SEMUA elemen UI selain area cetak */
         .no-print, aside, nav, header, footer {
             display: none !important;
         }
 
-        /* 3. RESET TATA LETAK DASHBOARD (Sangat Penting)
-           Menghilangkan paksaan margin/padding dari sidebar (biasanya ml-64 atau pl-64) */
+        /* 3. RESET TATA LETAK DASHBOARD */
         body, html, main, #app, #root {
             background-color: white !important;
             margin: 0 !important;
             padding: 0 !important;
+            height: auto !important;
         }
         
-        /* Menetralkan dorongan class Tailwind yang sering menggeser konten */
+        /* Menetralkan dorongan class Tailwind yang menggeser konten */
         [class*="ml-"], [class*="pl-"], [class*="md:ml-"], [class*="lg:ml-"] {
             margin-left: 0 !important;
             padding-left: 0 !important;
         }
 
-        /* 4. Pastikan print-area merespons lebar layar penuh */
+        /* 4. PERBAIKAN UTAMA: Biarkan print-area mengalir secara alami (Bukan absolute) */
         #print-area {
             display: block !important;
             width: 100% !important;
@@ -208,30 +208,50 @@
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
+            position: static !important; /* Mencegah terpotong dalam 1 halaman */
         }
 
-        /* 5. Munculkan elemen khusus print (Kop & Tanda Tangan) */
-        .print-block { display: block !important; }
-        .print-flex { display: flex !important; }
+        /* 5. Pengaturan Paginasi / Perpindahan Halaman */
+        tr {
+            page-break-inside: avoid; /* Mencegah baris tabel terpotong di tengah baris */
+        }
+        
+        thead {
+            display: table-header-group; /* Otomatis mengulang header tabel di halaman berikutnya */
+        }
 
-        /* 6. Paksa browser mencetak warna (Wajib untuk Chrome/Edge) */
+        tfoot {
+            display: table-row-group; /* Agar grand total ikut mengalir dengan baik */
+        }
+
+        /* Blok Tanda Tangan: Mencegah terpotong terbelah di antara 2 halaman */
+        .print-flex {
+            display: flex !important;
+            page-break-inside: avoid;
+            margin-top: 40px !important;
+        }
+
+        /* 6. Munculkan elemen khusus print */
+        .print-block { display: block !important; }
+
+        /* 7. Paksa browser mencetak warna */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        /* 7. Kustomisasi Tabel agar tegas dan rapi */
+        /* 8. Kustomisasi Tabel */
         .print-table {
             width: 100% !important;
             border-collapse: collapse !important;
         }
         
         .print-border {
-            border: 1px solid #1f2937 !important; /* Abu-abu sangat gelap */
+            border: 1px solid #1f2937 !important;
         }
 
         .print-table thead th {
-            background-color: #134e4a !important; /* Warna Hijau/Teal Gelap */
+            background-color: #134e4a !important; 
             color: #ffffff !important;
             border: 1px solid #134e4a !important;
         }
