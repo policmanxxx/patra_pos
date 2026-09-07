@@ -165,9 +165,6 @@
 <!-- ========================================== -->
 <!-- CSS KHUSUS PRINT                           -->
 <!-- ========================================== -->
-<!-- ========================================== -->
-<!-- CSS KHUSUS PRINT                           -->
-<!-- ========================================== -->
 <style>
     /* Secara default, sembunyikan elemen khusus print di tampilan web normal */
     .print-block { display: none; }
@@ -185,21 +182,75 @@
             display: none !important;
         }
 
-        /* 3. RESET TATA LETAK DASHBOARD */
+        /* 3. RESET TATA LETAK DASHBOARD (level dasar) */
         body, html, main, #app, #root {
             background-color: white !important;
             margin: 0 !important;
             padding: 0 !important;
             height: auto !important;
         }
-        
+
+        /* 3b. PERBAIKAN UTAMA: lepas SEMUA penguncian tinggi/overflow dari layout
+              dashboard (base_wp.html). Struktur base_wp.html memakai:
+              <body class="flex h-screen overflow-hidden">
+                <aside>...</aside>          <-- sudah disembunyikan di atas
+                <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+                    <header class="sticky top-0">...</header>  <-- disembunyikan
+                    <main class="overflow-y-auto p-4 md:p-8">
+                        {{ content }}
+                    </main>
+                </div>
+              </div>
+              h-screen + overflow-hidden/overflow-y-auto itu yang membuat konten
+              yang lebih panjang dari 1 layar ikut "terpotong" saat print,
+              karena browser menganggap tingginya tetap setinggi layar. */
+        html, body {
+            height: auto !important;
+            overflow: visible !important;
+        }
+
+        body * {
+            /* Lepas semua pembatas tinggi & overflow di SELURUH turunan body,
+               termasuk div wrapper tanpa id/class spesifik seperti
+               "flex-1 flex flex-col h-screen overflow-hidden relative" */
+            max-height: none !important;
+        }
+
+        .h-screen,
+        .min-h-screen,
+        .max-h-screen,
+        .overflow-hidden,
+        .overflow-y-auto,
+        .overflow-auto,
+        main {
+            height: auto !important;
+            overflow: visible !important;
+        }
+
+        main {
+            padding: 0 !important;
+        }
+
+        /* Kontainer overflow-x-auto pembungkus tabel: biarkan lebar penuh,
+           jangan sampai kolom kanan tabel ikut terpotong horizontal */
+        .overflow-x-auto {
+            overflow: visible !important;
+        }
+
+        /* Netralkan max-width pembatas konten (mis. "max-w-7xl mx-auto") */
+        .max-w-7xl {
+            max-width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+
         /* Menetralkan dorongan class Tailwind yang menggeser konten */
         [class*="ml-"], [class*="pl-"], [class*="md:ml-"], [class*="lg:ml-"] {
             margin-left: 0 !important;
             padding-left: 0 !important;
         }
 
-        /* 4. PERBAIKAN UTAMA: Biarkan print-area mengalir secara alami (Bukan absolute) */
+        /* 4. Biarkan print-area mengalir secara alami (Bukan absolute) */
         #print-area {
             display: block !important;
             width: 100% !important;
