@@ -171,70 +171,70 @@
     .print-flex { display: none; }
 
     @media print {
-        /* Pengaturan ukuran kertas dan margin */
+        /* 1. UBAH KE LANDSCAPE */
         @page {
-            size: A4 portrait;
-            margin: 1.5cm;
+            size: A4 landscape; 
+            margin: 1cm;
         }
 
-        /* Sembunyikan seluruh isi body (termasuk sidebar, navbar, dll) */
+        /* 2. Reset margin dari parent container (mematikan dorongan sidebar) */
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            position: static !important;
+        }
+
+        /* 3. Sembunyikan semua elemen */
         body * {
             visibility: hidden;
         }
 
-        /* Hanya tampilkan area id="print-area" dan anak-anaknya */
+        /* 4. Munculkan HANYA print-area */
         #print-area, #print-area * {
             visibility: visible;
         }
 
-        /* RESET POSISI: Tarik area print ke sudut paling kiri atas untuk menutupi ruang kosong sidebar */
+        /* 5. Paksa print-area ke pojok kiri atas, melebar 100% penuh */
         #print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100vw !important; /* Gunakan lebar viewport (kertas) penuh */
             margin: 0 !important;
             padding: 0 !important;
-            box-shadow: none !important; /* Hilangkan shadow */
-            border: none !important;     /* Hilangkan border luar */
+            border: none !important;
+            box-shadow: none !important;
         }
 
-        /* Sembunyikan tombol aksi dan filter secara permanen saat dicetak */
+        /* Sembunyikan kolom aksi dan filter */
         .no-print, .no-print * {
             display: none !important;
-            height: 0;
         }
 
         /* Munculkan elemen khusus print (Kop & Tanda Tangan) */
         .print-block { display: block !important; }
         .print-flex { display: flex !important; }
 
-        /* Paksa browser mencetak warna background (penting untuk header tabel) */
+        /* Paksa warna background (Header Tabel) tercetak */
         * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        /* Kustomisasi tabel agar rapi dan memiliki garis batas abu-abu saat dicetak */
+        /* Kustomisasi Tabel Cetak */
         .print-table {
             width: 100% !important;
             border-collapse: collapse !important;
         }
         
         .print-border {
-            border: 1px solid #d1d5db !important; /* Border gray-300 */
+            border: 1px solid #374151 !important; /* Gunakan abu-abu gelap agar jelas di kertas */
         }
 
-        /* Pastikan Header Tabel tetap berwarna Teal saat dicetak */
         .print-table thead th {
-            background-color: #134e4a !important; /* bg-teal-900 */
+            background-color: #134e4a !important; 
             color: #ffffff !important;
             border: 1px solid #134e4a !important;
-        }
-        
-        /* Hilangkan efek rounded di tabel saat dicetak */
-        #print-area {
-            border-radius: 0 !important;
         }
     }
 </style>
