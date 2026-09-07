@@ -303,6 +303,86 @@ def api_tambah_menu():
         print(f"DEBUG ERROR 500 TAMBAH MENU: {str(e)}")
         return jsonify({'success': False, 'message': f'Kesalahan Server: {str(e)}'}), 500   
  
+@api_bp.route('/menu/edit', methods=['POST'])
+def api_edit_menu():
+    try:
+        menu_id_str = request.form.get('menu_id')
+        
+        if not menu_id_str:
+            return jsonify({'success': False, 'message': 'menu_id wajib diisi!'}), 400
+
+        try:
+            menu_id = uuid.UUID(menu_id_str)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Format menu_id tidak valid!'}), 400
+
+        # Cari menu yang akan diedit
+        menu = Menu.query.get(menu_id)
+        if not menu:
+            return jsonify({'success': False, 'message': 'Menu tidak ditemukan!'}), 404
+
+        # Update field teks dan angka
+        menu.nama_menu = request.form.get('nama_menu', menu.nama_menu)
+        
+        if request.form.get('harga_dasar'):
+            menu.harga_dasar = float(request.form.get('harga_dasar'))
+            
+        if request.form.get('diskon'):
+            menu.diskon = float(request.form.get('diskon'))
+
+        # Kategori (Bisa di-null-kan jika dihapus)
+        kategori_id_str = request.form.get('kategori_id')
+        if kategori_id_str and str(kategori_id_str).strip() != '' and str(kategori_id_str).lower() != 'null':
+            try:
+                menu.kategori_id = uuid.UUID(kategori_id_str)
+            except ValueError:
+                pass
+        else:
+            menu.kategori_id = None
+
+        menu.kode_sku = request.form.get('kode_sku', menu.kode_sku)
+
+        # Update boolean
+        if request.form.get('is_tax_inclusive'):
+            menu.is_tax_inclusive = str(request.form.get('is_tax_inclusive')).lower() == 'true'
+        if request.form.get('is_taxable'):
+            menu.is_taxable = str(request.form.get('is_taxable')).lower() == 'true'
+        if request.form.get('is_track_stock'):
+            menu.is_track_stock = str(request.form.get('is_track_stock')).lower() == 'true'
+            
+        if menu.is_track_stock and request.form.get('stok'):
+            menu.stok = int(request.form.get('stok'))
+        elif not menu.is_track_stock:
+            menu.stok = 0
+            
+        if request.form.get('is_active'):
+            menu.is_active = str(request.form.get('is_active')).lower() == 'true'
+
+        # --- CEK JIKA ADA GAMBAR BARU YANG DIUPLOAD ---
+        foto_file = request.files.get('foto')
+        if foto_file and foto_file.filename != '':
+            nama_file_foto = secure_filename(foto_file.filename)
+            jalur_simpan = os.path.join(current_app.root_path, 'static', 'uploads', 'menu', nama_file_foto)
+            os.makedirs(os.path.dirname(jalur_simpan), exist_ok=True)
+            foto_file.save(jalur_simpan)
+            
+            # Opsional: Hapus file lama jika ada (agar server tidak penuh)
+            # if menu.foto_url:
+            #     old_file_path = os.path.join(current_app.root_path, 'static', 'uploads', 'menu', menu.foto_url)
+            #     if os.path.exists(old_file_path):
+            #         os.remove(old_file_path)
+                    
+            menu.foto_url = nama_file_foto
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Menu berhasil diperbarui!'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"DEBUG ERROR EDIT MENU: {str(e)}")
+        return jsonify({'success': False, 'message': f'Kesalahan Server: {str(e)}'}), 500 
+ 
+ 
 @api_bp.route('/kategori/tambah', methods=['POST'])
 def api_tambah_kategori():
     try:
